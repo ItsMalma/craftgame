@@ -146,4 +146,8 @@ func main() {
 			frames = 0
 		}
 	}
+
+	if err := level.Save(); err != nil {
+		log.Fatal(err)
+	}
 }

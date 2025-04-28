@@ -107,6 +107,27 @@ func (level *Level) Load() error {
 	return nil
 }
 
+func (level *Level) Save() error {
+	levelFile, err := os.OpenFile("level.dat", os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	defer levelFile.Close()
+
+	gzipWriter := gzip.NewWriter(levelFile)
+	if err != nil {
+		return err
+	}
+	defer gzipWriter.Close()
+
+	_, err = gzipWriter.Write(level.blocks)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (level *Level) calculateLightDepths(minX, minZ, maxX, maxZ int) {
 	for x := minX; x < minX+maxX; x++ {
 		for z := minZ; z < minZ+maxZ; z++ {
