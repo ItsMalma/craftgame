@@ -1,8 +1,8 @@
 package game
 
 var (
-	TileGrass = NewTile(0)
-	TileRock  = NewTile(1)
+	TileDirt  = NewTile(0)
+	TileStone = NewTile(1)
 )
 
 type Tile struct {

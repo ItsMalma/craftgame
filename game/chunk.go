@@ -74,9 +74,9 @@ func (chunk *Chunk) Rebuild(layer uint32) {
 			for z := chunk.minZ; z < chunk.maxZ; z++ {
 				if chunk.level.IsTile(x, y, z) {
 					if y > chunk.level.Depth-7 && chunk.level.GetBrightness(x, y, z) == 1.0 {
-						TileGrass.Render(ChunkTessellator, chunk.level, int(layer), x, y, z)
+						TileDirt.Render(ChunkTessellator, chunk.level, int(layer), x, y, z)
 					} else {
-						TileRock.Render(ChunkTessellator, chunk.level, int(layer), x, y, z)
+						TileStone.Render(ChunkTessellator, chunk.level, int(layer), x, y, z)
 					}
 				}
 			}
