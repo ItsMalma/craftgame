@@ -1,8 +1,7 @@
 package game
 
 import (
-	"math"
-
+	"github.com/chewxy/math32"
 	"github.com/go-gl/gl/v2.1/gl"
 )
 
@@ -52,16 +51,16 @@ func GetFrustum() *Frustum {
 }
 
 func (frustum *Frustum) NormalizePlane(frustumValues [6][4]float32, side FrustumSide) {
-	magnitude := math.Sqrt(float64(
+	magnitude := math32.Sqrt(
 		frustumValues[side][FrustumA]*frustumValues[side][FrustumA] +
 			frustumValues[side][FrustumB]*frustumValues[side][FrustumB] +
 			frustumValues[side][FrustumC]*frustumValues[side][FrustumC],
-	))
+	)
 
-	frustumValues[side][FrustumA] /= float32(magnitude)
-	frustumValues[side][FrustumB] /= float32(magnitude)
-	frustumValues[side][FrustumC] /= float32(magnitude)
-	frustumValues[side][FrustumD] /= float32(magnitude)
+	frustumValues[side][FrustumA] /= magnitude
+	frustumValues[side][FrustumB] /= magnitude
+	frustumValues[side][FrustumC] /= magnitude
+	frustumValues[side][FrustumD] /= magnitude
 }
 
 func (frustum *Frustum) CalculateFrustum() {

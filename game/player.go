@@ -60,7 +60,7 @@ func (player *Player) resetPosition() {
 
 func (player *Player) Turn(x, y float64) {
 	player.YRotation += x * 0.15
-	player.XRotation -= y * 0.15
+	player.XRotation += y * 0.15
 
 	player.XRotation = max(-90.0, player.XRotation)
 	player.XRotation = min(90.0, player.XRotation)

@@ -1,3 +1,5 @@
+github.com/chewxy/math32 v1.11.1 h1:b7PGHlp8KjylDoU8RrcEsRuGZhJuz8haxnKfuMMRqy8=
+github.com/chewxy/math32 v1.11.1/go.mod h1:dOB2rcuFrCn6UHrze36WSLVPKtzPMRAQvBvUwkSsLqs=
 github.com/go-gl-legacy/gl v0.0.0-20150223033340-df25b1fe668d h1:oY2a2QcxTvYnrea/vDFbwkBkBDDGFva+7M6wdI9M4yw=
 github.com/go-gl-legacy/gl v0.0.0-20150223033340-df25b1fe668d/go.mod h1:LtNMH/pb8ZOBt9UzPsxrXK3/jT5qnQuiBYCrTgj4D64=
 github.com/go-gl-legacy/glfw v0.0.0-20150222234334-004165aaed79 h1:+/vJt/WQotZF8yrvrkT5mcoGo76iCdnkWjydjKyfV+s=

@@ -36,7 +36,7 @@ func (tile *Tile) Render(tessellator *Tessellator, level *Level, layer, x, y, z 
 		maxZ float32 = float32(z) + 1.0
 	)
 
-	if level.IsSolidTile(x, y-1, z) {
+	if !level.IsSolidTile(x, y-1, z) {
 		brightness := level.GetBrightness(x, y-1, z) * float32(shadeY)
 
 		if (layer == 1) != (brightness == float32(shadeY)) {

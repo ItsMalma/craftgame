@@ -37,12 +37,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	monitor := glfw.GetPrimaryMonitor()
-	mode := monitor.GetVideoMode()
 	window, err := glfw.CreateWindow(
-		mode.Width, mode.Height,
+		width, height,
 		"Minecraft",
-		monitor, nil,
+		nil, nil,
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -50,6 +48,7 @@ func main() {
 	defer window.Destroy()
 
 	window.MakeContextCurrent()
+	glfw.SwapInterval(0)
 
 	if err := gl.Init(); err != nil {
 		log.Fatal(err)
@@ -107,12 +106,10 @@ func main() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		gl.LoadIdentity()
 
-		otherPlayer := player
-
 		gl.Translatef(0.0, 0.0, -0.3)
 
-		gl.Rotated(otherPlayer.XRotation, 1.0, 0.0, 0.0)
-		gl.Rotated(otherPlayer.YRotation, 0.0, 1.0, 0.0)
+		gl.Rotated(player.XRotation, 1.0, 0.0, 0.0)
+		gl.Rotated(player.YRotation, 0.0, 1.0, 0.0)
 
 		x := player.PrevX + (player.X-player.PrevX)*float64(partialTicks)
 		y := player.PrevY + (player.Y-player.PrevY)*float64(partialTicks)
@@ -149,6 +146,4 @@ func main() {
 			frames = 0
 		}
 	}
-
-	log.Println(fogColor)
 }

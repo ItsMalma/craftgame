@@ -6,6 +6,8 @@ import (
 	"math"
 	"math/rand"
 	"os"
+
+	"github.com/chewxy/math32"
 )
 
 type Level struct {
@@ -57,8 +59,8 @@ func NewLevel(width, height, depth int) (*Level, error) {
 				offsetY := int(rand.Float32()*float32(radius)*2.0 - float32(radius))
 				offsetZ := int(rand.Float32()*float32(radius)*2.0 - float32(radius))
 
-				distance := math.Pow(float64(offsetX), 2) + math.Pow(float64(offsetY), 2) + math.Pow(float64(offsetZ), 2)
-				if distance > float64(radius)*float64(radius) {
+				distance := math32.Pow(float32(offsetX), 2) + math32.Pow(float32(offsetY), 2) + math32.Pow(float32(offsetZ), 2)
+				if distance > float32(radius)*float32(radius) {
 					continue
 				}
 
