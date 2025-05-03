@@ -8,9 +8,11 @@ type Renderer struct {
 	chunkAmountX, chunkAmountY, chunkAmountZ int
 
 	chunks []*Chunk
+
+	texture int32
 }
 
-func NewRenderer(level *Level) *Renderer {
+func NewRenderer(level *Level, texture int32) *Renderer {
 	renderer := new(Renderer)
 
 	renderer.chunkAmountX = level.Width / chunkSize
@@ -40,6 +42,8 @@ func NewRenderer(level *Level) *Renderer {
 		}
 	}
 
+	renderer.texture = texture
+
 	return renderer
 }
 
@@ -50,7 +54,7 @@ func (renderer *Renderer) Render(layer int) {
 
 	for _, chunk := range renderer.chunks {
 		if frustum.CubeInFrustumAABB(chunk.BoundingBox) {
-			chunk.Render(uint32(layer))
+			chunk.Render(layer, renderer.texture)
 		}
 	}
 }

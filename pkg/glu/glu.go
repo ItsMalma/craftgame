@@ -1,14 +1,9 @@
 package glu
 
-// #cgo darwin LDFLAGS: -framework Carbon -framework OpenGL -framework GLUT
 // #cgo linux LDFLAGS: -lGLU
 // #cgo windows LDFLAGS: -lglu32
 //
-// #ifdef __APPLE__
-//   #include <OpenGL/glu.h>
-// #else
-//   #include <GL/glu.h>
-// #endif
+// #include <GL/glu.h>
 import "C"
 import "unsafe"
 
@@ -21,7 +16,7 @@ func Perspective(fovy, aspect, zNear, zFar float64) {
 	)
 }
 
-func Build2DMipmaps(target, internalFormat, width, height, format, typ int32, data unsafe.Pointer) int32 {
+func Build2DMipmaps(target, internalFormat, width, height, format, typ int32, data *int32) int32 {
 	return int32(C.gluBuild2DMipmaps(
 		C.GLenum(target),
 		C.GLint(internalFormat),
@@ -29,6 +24,6 @@ func Build2DMipmaps(target, internalFormat, width, height, format, typ int32, da
 		C.GLsizei(height),
 		C.GLenum(format),
 		C.GLenum(typ),
-		data,
+		unsafe.Pointer(data),
 	))
 }

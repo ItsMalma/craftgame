@@ -25,13 +25,12 @@ func NewLevel(width, height, depth int) (*Level, error) {
 	level.Depth = depth
 
 	level.blocks = make([]byte, width*height*depth)
-	level.lightDepths = make([]byte, width*height*depth)
+	level.lightDepths = make([]byte, width*height)
 
 	_, err := os.Stat("level.dat")
 	if err == nil || os.IsExist(err) {
-		if err := level.Load(); err != nil {
-			return nil, err
-		}
+		err := level.Load()
+		return level, err
 	} else if !os.IsNotExist(err) {
 		return nil, err
 	}
@@ -47,11 +46,11 @@ func NewLevel(width, height, depth int) (*Level, error) {
 	}
 
 	for range 10000 {
-		caveSize := int(rand.Float32()*7) + 1
+		caveSize := rand.Intn(7) + 1
 
-		caveX := int(rand.Float32() * float32(width))
-		caveY := int(rand.Float32() * float32(height))
-		caveZ := int(rand.Float32() * float32(depth))
+		caveX := rand.Intn(width)
+		caveY := rand.Intn(height)
+		caveZ := rand.Intn(depth)
 
 		for radius := range caveSize {
 			for range 1000 {
@@ -115,9 +114,6 @@ func (level *Level) Save() error {
 	defer levelFile.Close()
 
 	gzipWriter := gzip.NewWriter(levelFile)
-	if err != nil {
-		return err
-	}
 	defer gzipWriter.Close()
 
 	_, err = gzipWriter.Write(level.blocks)
@@ -176,8 +172,8 @@ func (level *Level) GetBrightness(x, y, z int) float32 {
 	return float32(light)
 }
 
-func (level *Level) GetCubes(boundingBox *AABB) []*AABB {
-	boundingBoxes := []*AABB{}
+func (level *Level) GetCubes(boundingBox AABB) []AABB {
+	boundingBoxes := []AABB{}
 
 	minX := int(math.Floor(boundingBox.MinX) - 1)
 	maxX := int(math.Ceil(boundingBox.MaxX) + 1)

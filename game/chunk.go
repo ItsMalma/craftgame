@@ -1,35 +1,23 @@
 package game
 
 import (
-	"github.com/go-gl/gl/v2.1/gl"
+	"minecraft/pkg/gl"
 )
 
 var (
 	ChunkRebuiltThisFrame = 0
 	ChunkUpdates          = 0
 
-	chunkTexture       uint32
-	chunkTextureLoaded = false
-
 	ChunkTessellator *Tessellator = NewTessellator()
 )
-
-func ChunkTexture() uint32 {
-	if !chunkTextureLoaded {
-		chunkTexture = LoadTexture("terrain.png", gl.NEAREST)
-		chunkTextureLoaded = true
-	}
-
-	return chunkTexture
-}
 
 type Chunk struct {
 	level *Level
 
-	BoundingBox                        *AABB
+	BoundingBox                        AABB
 	minX, minY, minZ, maxX, maxY, maxZ int
 
-	lists uint32
+	lists int
 	dirty bool
 }
 
@@ -54,7 +42,7 @@ func NewChunk(level *Level, minX, minY, minZ, maxX, maxY, maxZ int) *Chunk {
 	return chunk
 }
 
-func (chunk *Chunk) Rebuild(layer uint32) {
+func (chunk *Chunk) Rebuild(layer int, texture int32) {
 	if ChunkRebuiltThisFrame == 2 {
 		return
 	}
@@ -64,9 +52,9 @@ func (chunk *Chunk) Rebuild(layer uint32) {
 
 	chunk.dirty = false
 
-	gl.NewList(chunk.lists+layer, gl.COMPILE)
-	gl.Enable(gl.TEXTURE_2D)
-	gl.BindTexture(gl.TEXTURE_2D, ChunkTexture())
+	gl.NewList(chunk.lists+layer, gl.Compile)
+	gl.Enable(gl.Texture2D)
+	gl.BindTexture(gl.Texture2D, texture)
 	ChunkTessellator.Init()
 
 	for x := chunk.minX; x < chunk.maxX; x++ {
@@ -84,14 +72,14 @@ func (chunk *Chunk) Rebuild(layer uint32) {
 	}
 
 	ChunkTessellator.Flush()
-	gl.Disable(gl.TEXTURE_2D)
+	gl.Disable(gl.Texture2D)
 	gl.EndList()
 }
 
-func (chunk *Chunk) Render(layer uint32) {
+func (chunk *Chunk) Render(layer int, texture int32) {
 	if chunk.dirty {
-		chunk.Rebuild(0)
-		chunk.Rebuild(1)
+		chunk.Rebuild(0, texture)
+		chunk.Rebuild(1, texture)
 	}
 
 	gl.CallList(chunk.lists + layer)

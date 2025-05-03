@@ -1,8 +1,6 @@
 package game
 
-import (
-	"github.com/go-gl/gl/v2.1/gl"
-)
+import "minecraft/pkg/gl"
 
 const (
 	tessellatorMaxVertices = 100000
@@ -77,40 +75,37 @@ func (tessellator *Tessellator) Color(r, g, b float32) {
 }
 
 func (tessellator *Tessellator) Flush() {
-	gl.VertexPointer(3, gl.FLOAT, 0, gl.Ptr(&tessellator.vertex[0]))
+	gl.VertexPointer(3, gl.Float, 0, &tessellator.vertex[0])
 	if tessellator.hasTexture {
-		gl.TexCoordPointer(2, gl.FLOAT, 0, gl.Ptr(&tessellator.textureCoordinate[0]))
+		gl.TexCoordPointer(2, gl.Float, 0, &tessellator.textureCoordinate[0])
 	}
 	if tessellator.hasColor {
-		gl.ColorPointer(3, gl.FLOAT, 0, gl.Ptr(&tessellator.color[0]))
+		gl.ColorPointer(3, gl.Float, 0, &tessellator.color[0])
 	}
 
-	gl.EnableClientState(gl.VERTEX_ARRAY)
+	gl.EnableClientState(gl.VertexArray)
 	if tessellator.hasTexture {
-		gl.EnableClientState(gl.TEXTURE_COORD_ARRAY)
+		gl.EnableClientState(gl.TexCoordArray)
 	}
 	if tessellator.hasColor {
-		gl.EnableClientState(gl.COLOR_ARRAY)
+		gl.EnableClientState(gl.ColorArray)
 	}
 
-	gl.DrawArrays(gl.QUADS, 0, int32(tessellator.vertices))
+	gl.DrawArrays(gl.Quads, 0, tessellator.vertices)
 
-	gl.DisableClientState(gl.VERTEX_ARRAY)
+	gl.DisableClientState(gl.VertexArray)
 	if tessellator.hasTexture {
-		gl.DisableClientState(gl.TEXTURE_COORD_ARRAY)
+		gl.DisableClientState(gl.TexCoordArray)
 	}
 	if tessellator.hasColor {
-		gl.DisableClientState(gl.COLOR_ARRAY)
+		gl.DisableClientState(gl.ColorArray)
 	}
 
 	tessellator.clear()
 }
 
 func (tessellator *Tessellator) clear() {
-	tessellator.vertex = make([]float32, tessellatorMaxVertices*3)
-	tessellator.textureCoordinate = make([]float32, tessellatorMaxVertices*2)
 	tessellator.vertices = 0
-
 	tessellator.hasTexture = false
 	tessellator.hasColor = false
 }

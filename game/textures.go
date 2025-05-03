@@ -3,7 +3,7 @@ package game
 import (
 	_ "image/jpeg"
 	_ "image/png"
-	"log"
+	"minecraft/pkg/gl"
 	"minecraft/pkg/glu"
 
 	"bytes"
@@ -11,27 +11,25 @@ import (
 	"image/color"
 	"math"
 	"os"
-
-	"github.com/go-gl/gl/v2.1/gl"
 )
 
-func LoadTexture(resourceName string, mode int32) uint32 {
-	var id uint32
+func LoadTexture(resourceName string, mode int32) (int32, error) {
+	var id int32
 	gl.GenTextures(1, &id)
 
-	BindTexture(int(id))
+	BindTexture(id)
 
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mode)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, mode)
+	gl.TexParameteri(gl.Texture2D, gl.TextureMinFilter, mode)
+	gl.TexParameteri(gl.Texture2D, gl.TextureMagFilter, mode)
 
 	data, err := os.ReadFile(resourceName)
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	bounds := img.Bounds()
@@ -55,16 +53,16 @@ func LoadTexture(resourceName string, mode int32) uint32 {
 		}
 	}
 
-	glu.Build2DMipmaps(gl.TEXTURE_2D, gl.RGBA, int32(width), int32(height), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(&pixels[0]))
+	glu.Build2DMipmaps(gl.Texture2D, gl.RGBA, int32(width), int32(height), gl.RGBA, gl.UnsignedByte, &pixels[0])
 
-	return id
+	return id, nil
 }
 
-var lastId int = math.MinInt64
+var lastId int32 = math.MinInt32
 
-func BindTexture(id int) {
+func BindTexture(id int32) {
 	if id != lastId {
-		gl.BindTexture(gl.TEXTURE_2D, uint32(id))
+		gl.BindTexture(gl.Texture2D, id)
 		lastId = id
 	}
 }

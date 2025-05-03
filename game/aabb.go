@@ -6,8 +6,8 @@ type AABB struct {
 	MinX, MinY, MinZ, MaxX, MaxY, MaxZ float64
 }
 
-func NewAABB(minX, minY, minZ, maxX, maxY, maxZ float64) *AABB {
-	aabb := new(AABB)
+func NewAABB(minX, minY, minZ, maxX, maxY, maxZ float64) AABB {
+	aabb := AABB{}
 
 	aabb.epsilon = 0.0
 
@@ -21,7 +21,7 @@ func NewAABB(minX, minY, minZ, maxX, maxY, maxZ float64) *AABB {
 	return aabb
 }
 
-func (aabb *AABB) Expand(x, y, z float64) *AABB {
+func (aabb AABB) Expand(x, y, z float64) AABB {
 	minX := aabb.MinX
 	minY := aabb.MinY
 	minZ := aabb.MinZ
@@ -50,7 +50,7 @@ func (aabb *AABB) Expand(x, y, z float64) *AABB {
 	return NewAABB(minX, minY, minZ, maxX, maxY, maxZ)
 }
 
-func (aabb *AABB) ClipXCollide(otherBoundingBox *AABB, x float64) float64 {
+func (aabb AABB) ClipXCollide(otherBoundingBox AABB, x float64) float64 {
 	if otherBoundingBox.MaxY <= aabb.MinY || otherBoundingBox.MinY >= aabb.MaxY {
 		return x
 	}
@@ -76,7 +76,7 @@ func (aabb *AABB) ClipXCollide(otherBoundingBox *AABB, x float64) float64 {
 	return x
 }
 
-func (aabb *AABB) ClipYCollide(otherBoundingBox *AABB, y float64) float64 {
+func (aabb AABB) ClipYCollide(otherBoundingBox AABB, y float64) float64 {
 	if otherBoundingBox.MaxX <= aabb.MinX || otherBoundingBox.MinX >= aabb.MaxX {
 		return y
 	}
@@ -102,7 +102,7 @@ func (aabb *AABB) ClipYCollide(otherBoundingBox *AABB, y float64) float64 {
 	return y
 }
 
-func (aabb *AABB) ClipZCollide(otherBoundingBox *AABB, z float64) float64 {
+func (aabb AABB) ClipZCollide(otherBoundingBox AABB, z float64) float64 {
 	if otherBoundingBox.MaxX <= aabb.MinX || otherBoundingBox.MinX >= aabb.MaxX {
 		return z
 	}
@@ -128,11 +128,13 @@ func (aabb *AABB) ClipZCollide(otherBoundingBox *AABB, z float64) float64 {
 	return z
 }
 
-func (aabb *AABB) Move(x, y, z float64) {
+func (aabb AABB) Move(x, y, z float64) AABB {
 	aabb.MinX += x
 	aabb.MinY += y
 	aabb.MinZ += z
 	aabb.MaxX += x
 	aabb.MaxY += y
 	aabb.MaxZ += z
+
+	return aabb
 }

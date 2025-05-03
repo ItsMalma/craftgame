@@ -1,8 +1,9 @@
 package game
 
 import (
+	"minecraft/pkg/gl"
+
 	"github.com/chewxy/math32"
-	"github.com/go-gl/gl/v2.1/gl"
 )
 
 type FrustumSide int
@@ -68,11 +69,11 @@ func (frustum *Frustum) CalculateFrustum() {
 	modelView := [16]float32{}
 	clipping := [16]float32{}
 
-	gl.GetFloatv(gl.PROJECTION_MATRIX, &frustum.projection[0])
-	copy(projection[:], frustum.projection[:])
+	gl.GetFloatv(gl.ProjectionMatrix, &frustum.projection[0])
+	projection = frustum.projection
 
-	gl.GetFloatv(gl.MODELVIEW_MATRIX, &frustum.modelView[0])
-	copy(modelView[:], frustum.modelView[:])
+	gl.GetFloatv(gl.ModelViewMatrix, &frustum.modelView[0])
+	modelView = frustum.modelView
 
 	clipping[0] = modelView[0]*projection[0] + modelView[1]*projection[4] + modelView[2]*projection[8] + modelView[3]*projection[12]
 	clipping[1] = modelView[0]*projection[1] + modelView[1]*projection[5] + modelView[2]*projection[9] + modelView[3]*projection[13]
@@ -164,7 +165,7 @@ func (frustum *Frustum) CubeInFrustum(minX, minY, minZ, maxX, maxY, maxZ float32
 	return true
 }
 
-func (frustum *Frustum) CubeInFrustumAABB(aabb *AABB) bool {
+func (frustum *Frustum) CubeInFrustumAABB(aabb AABB) bool {
 	return frustum.CubeInFrustum(
 		float32(aabb.MinX),
 		float32(aabb.MinY),

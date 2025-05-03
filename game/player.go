@@ -3,8 +3,7 @@ package game
 import (
 	"math"
 	"math/rand"
-
-	"github.com/go-gl/glfw/v3.3/glfw"
+	"minecraft/pkg/glfw"
 )
 
 type Player struct {
@@ -17,7 +16,7 @@ type Player struct {
 
 	onGround bool
 
-	BoundingBox *AABB
+	BoundingBox AABB
 }
 
 func NewPlayer(level *Level) *Player {
@@ -74,23 +73,23 @@ func (player *Player) Tick(window *glfw.Window) {
 	forward := 0.0
 	vertical := 0.0
 
-	if window.GetKey(glfw.KeyR) == glfw.Press {
+	if glfw.GetKey(window, glfw.KeyR) == glfw.Press {
 		player.resetPosition()
 	}
 
-	if window.GetKey(glfw.KeyW) == glfw.Press {
+	if glfw.GetKey(window, glfw.KeyW) == glfw.Press {
 		forward--
 	}
-	if window.GetKey(glfw.KeyS) == glfw.Press {
+	if glfw.GetKey(window, glfw.KeyS) == glfw.Press {
 		forward++
 	}
-	if window.GetKey(glfw.KeyA) == glfw.Press {
+	if glfw.GetKey(window, glfw.KeyA) == glfw.Press {
 		vertical--
 	}
-	if window.GetKey(glfw.KeyD) == glfw.Press {
+	if glfw.GetKey(window, glfw.KeyD) == glfw.Press {
 		vertical++
 	}
-	if window.GetKey(glfw.KeySpace) == glfw.Press {
+	if glfw.GetKey(window, glfw.KeySpace) == glfw.Press {
 		if player.onGround {
 			player.MotionY = 0.12
 		}
@@ -126,17 +125,17 @@ func (player *Player) Move(x, y, z float64) {
 	for _, aabb := range aabbs {
 		y = aabb.ClipYCollide(player.BoundingBox, y)
 	}
-	player.BoundingBox.Move(0, y, 0)
+	player.BoundingBox = player.BoundingBox.Move(0, y, 0)
 
 	for _, aabb := range aabbs {
 		x = aabb.ClipXCollide(player.BoundingBox, x)
 	}
-	player.BoundingBox.Move(x, 0, 0)
+	player.BoundingBox = player.BoundingBox.Move(x, 0, 0)
 
 	for _, aabb := range aabbs {
 		z = aabb.ClipZCollide(player.BoundingBox, z)
 	}
-	player.BoundingBox.Move(0, 0, z)
+	player.BoundingBox = player.BoundingBox.Move(0, 0, z)
 
 	player.onGround = prevY != y && prevY < 0.0
 
