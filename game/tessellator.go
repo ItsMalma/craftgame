@@ -1,6 +1,6 @@
 package game
 
-import "minecraft/pkg/gl"
+import "craftgame/pkg/gl"
 
 const (
 	tessellatorMaxVertices = 100000

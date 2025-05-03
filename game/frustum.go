@@ -1,7 +1,7 @@
 package game
 
 import (
-	"minecraft/pkg/gl"
+	"craftgame/pkg/gl"
 
 	"github.com/chewxy/math32"
 )
@@ -51,17 +51,17 @@ func GetFrustum() *Frustum {
 	return frustumInstance
 }
 
-func (frustum *Frustum) NormalizePlane(frustumValues [6][4]float32, side FrustumSide) {
+func (frustum *Frustum) NormalizePlane(side FrustumSide) {
 	magnitude := math32.Sqrt(
-		frustumValues[side][FrustumA]*frustumValues[side][FrustumA] +
-			frustumValues[side][FrustumB]*frustumValues[side][FrustumB] +
-			frustumValues[side][FrustumC]*frustumValues[side][FrustumC],
+		frustum.values[side][FrustumA]*frustum.values[side][FrustumA] +
+			frustum.values[side][FrustumB]*frustum.values[side][FrustumB] +
+			frustum.values[side][FrustumC]*frustum.values[side][FrustumC],
 	)
 
-	frustumValues[side][FrustumA] /= magnitude
-	frustumValues[side][FrustumB] /= magnitude
-	frustumValues[side][FrustumC] /= magnitude
-	frustumValues[side][FrustumD] /= magnitude
+	frustum.values[side][FrustumA] /= magnitude
+	frustum.values[side][FrustumB] /= magnitude
+	frustum.values[side][FrustumC] /= magnitude
+	frustum.values[side][FrustumD] /= magnitude
 }
 
 func (frustum *Frustum) CalculateFrustum() {
@@ -99,37 +99,37 @@ func (frustum *Frustum) CalculateFrustum() {
 	frustum.values[FrustumRight][FrustumB] = clipping[7] - clipping[4]
 	frustum.values[FrustumRight][FrustumC] = clipping[11] - clipping[8]
 	frustum.values[FrustumRight][FrustumD] = clipping[15] - clipping[12]
-	frustum.NormalizePlane(frustum.values, FrustumRight)
+	frustum.NormalizePlane(FrustumRight)
 
 	frustum.values[FrustumLeft][FrustumA] = clipping[3] + clipping[0]
 	frustum.values[FrustumLeft][FrustumB] = clipping[7] + clipping[4]
 	frustum.values[FrustumLeft][FrustumC] = clipping[11] + clipping[8]
 	frustum.values[FrustumLeft][FrustumD] = clipping[15] + clipping[12]
-	frustum.NormalizePlane(frustum.values, FrustumLeft)
+	frustum.NormalizePlane(FrustumLeft)
 
 	frustum.values[FrustumBottom][FrustumA] = clipping[3] + clipping[1]
 	frustum.values[FrustumBottom][FrustumB] = clipping[7] + clipping[5]
 	frustum.values[FrustumBottom][FrustumC] = clipping[11] + clipping[9]
 	frustum.values[FrustumBottom][FrustumD] = clipping[15] + clipping[13]
-	frustum.NormalizePlane(frustum.values, FrustumBottom)
+	frustum.NormalizePlane(FrustumBottom)
 
 	frustum.values[FrustumTop][FrustumA] = clipping[3] - clipping[1]
 	frustum.values[FrustumTop][FrustumB] = clipping[7] - clipping[5]
 	frustum.values[FrustumTop][FrustumC] = clipping[11] - clipping[9]
 	frustum.values[FrustumTop][FrustumD] = clipping[15] - clipping[13]
-	frustum.NormalizePlane(frustum.values, FrustumTop)
+	frustum.NormalizePlane(FrustumTop)
 
 	frustum.values[FrustumBack][FrustumA] = clipping[3] - clipping[2]
 	frustum.values[FrustumBack][FrustumB] = clipping[7] - clipping[6]
 	frustum.values[FrustumBack][FrustumC] = clipping[11] - clipping[10]
 	frustum.values[FrustumBack][FrustumD] = clipping[15] - clipping[14]
-	frustum.NormalizePlane(frustum.values, FrustumBack)
+	frustum.NormalizePlane(FrustumBack)
 
 	frustum.values[FrustumFront][FrustumA] = clipping[3] + clipping[2]
 	frustum.values[FrustumFront][FrustumB] = clipping[7] + clipping[6]
 	frustum.values[FrustumFront][FrustumC] = clipping[11] + clipping[10]
 	frustum.values[FrustumFront][FrustumD] = clipping[15] + clipping[14]
-	frustum.NormalizePlane(frustum.values, FrustumFront)
+	frustum.NormalizePlane(FrustumFront)
 }
 
 func (frustum *Frustum) CubeInFrustum(minX, minY, minZ, maxX, maxY, maxZ float32) bool {

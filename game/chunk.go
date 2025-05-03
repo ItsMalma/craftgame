@@ -1,7 +1,7 @@
 package game
 
 import (
-	"minecraft/pkg/gl"
+	"craftgame/pkg/gl"
 )
 
 var (

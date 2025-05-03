@@ -1,9 +1,9 @@
 package game
 
 import (
+	"craftgame/pkg/glfw"
 	"math"
 	"math/rand"
-	"minecraft/pkg/glfw"
 )
 
 type Player struct {

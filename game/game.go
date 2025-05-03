@@ -1,11 +1,11 @@
 package game
 
 import (
+	"craftgame/pkg/gl"
+	"craftgame/pkg/glfw"
+	"craftgame/pkg/glu"
 	"errors"
 	"fmt"
-	"minecraft/pkg/gl"
-	"minecraft/pkg/glfw"
-	"minecraft/pkg/glu"
 	"time"
 )
 

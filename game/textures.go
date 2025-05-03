@@ -1,10 +1,10 @@
 package game
 
 import (
+	"craftgame/pkg/gl"
+	"craftgame/pkg/glu"
 	_ "image/jpeg"
 	_ "image/png"
-	"minecraft/pkg/gl"
-	"minecraft/pkg/glu"
 
 	"bytes"
 	"image"

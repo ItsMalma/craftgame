@@ -1,8 +1,8 @@
 package main
 
 import (
+	"craftgame/game"
 	"log"
-	"minecraft/game"
 	"runtime"
 )
 
