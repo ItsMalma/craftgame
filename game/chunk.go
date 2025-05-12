@@ -12,10 +12,10 @@ var (
 )
 
 type Chunk struct {
-	AABB  AABB
-	level *Level
+	BoundingBox AABB
+	Level       *Level
 
-	x0, y0, z0, x1, y1, z1 int
+	MinX, MinY, MinZ, MaxX, MaxY, MaxZ int
 
 	dirty bool
 	lists int
@@ -27,25 +27,25 @@ func NewChunk(level *Level, minX, minY, minZ, maxX, maxY, maxZ int) *Chunk {
 	chunk.dirty = true
 	chunk.lists = -1
 
-	chunk.level = level
+	chunk.Level = level
 
-	chunk.x0 = minX
-	chunk.y0 = minY
-	chunk.z0 = minZ
-	chunk.x1 = maxX
-	chunk.y1 = maxY
-	chunk.z1 = maxZ
+	chunk.MinX = minX
+	chunk.MinY = minY
+	chunk.MinZ = minZ
+	chunk.MaxX = maxX
+	chunk.MaxY = maxY
+	chunk.MaxZ = maxZ
 
-	chunk.AABB = NewAABB(float64(minX), float64(minY), float64(minZ), float64(maxX), float64(maxY), float64(maxZ))
+	chunk.BoundingBox = NewAABB(float32(minX), float32(minY), float32(minZ), float32(maxX), float32(maxY), float32(maxZ))
 
 	chunk.lists = gl.GenLists(2)
 
 	return chunk
 }
 
-func (chunk *Chunk) Rebuild(layer int, texture int32) {
+func (chunk *Chunk) Rebuild(layer int) error {
 	if ChunkRebuiltThisFrame == 2 {
-		return
+		return nil
 	}
 
 	chunk.dirty = false
@@ -53,25 +53,30 @@ func (chunk *Chunk) Rebuild(layer int, texture int32) {
 	ChunkUpdates++
 	ChunkRebuiltThisFrame++
 
+	terrain, err := LoadTexture("terrain.png", gl.Nearest)
+	if err != nil {
+		return err
+	}
+
 	gl.NewList(chunk.lists+layer, gl.Compile)
 	gl.Enable(gl.Texture2D)
-	gl.BindTexture(gl.Texture2D, texture)
+	gl.BindTexture(gl.Texture2D, terrain)
 
 	chunkTessellator.Init()
 
 	tiles := 0
-	for x := chunk.x0; x < chunk.x1; x++ {
-		for y := chunk.y0; y < chunk.y1; y++ {
-			for z := chunk.z0; z < chunk.z1; z++ {
-				if chunk.level.IsTile(x, y, z) {
-					tex := y != chunk.level.Depth*2/3
+	for x := chunk.MinX; x < chunk.MaxX; x++ {
+		for y := chunk.MinY; y < chunk.MaxY; y++ {
+			for z := chunk.MinZ; z < chunk.MaxZ; z++ {
+				if chunk.Level.IsTile(x, y, z) {
+					tex := y != chunk.Level.Depth*2/3
 
 					tiles++
 
 					if !tex {
-						TileStone.Render(chunkTessellator, chunk.level, int(layer), x, y, z)
+						TileStone.Render(chunkTessellator, chunk.Level, int(layer), x, y, z)
 					} else {
-						TileGrass.Render(chunkTessellator, chunk.level, int(layer), x, y, z)
+						TileGrass.Render(chunkTessellator, chunk.Level, int(layer), x, y, z)
 					}
 				}
 			}
@@ -82,15 +87,23 @@ func (chunk *Chunk) Rebuild(layer int, texture int32) {
 
 	gl.Disable(gl.Texture2D)
 	gl.EndList()
+
+	return nil
 }
 
-func (chunk *Chunk) Render(layer int, texture int32) {
+func (chunk *Chunk) Render(layer int) error {
 	if chunk.dirty {
-		chunk.Rebuild(0, texture)
-		chunk.Rebuild(1, texture)
+		if err := chunk.Rebuild(0); err != nil {
+			return err
+		}
+		if err := chunk.Rebuild(1); err != nil {
+			return err
+		}
 	}
 
 	gl.CallList(chunk.lists + layer)
+
+	return nil
 }
 
 func (chunk *Chunk) SetDirty() {

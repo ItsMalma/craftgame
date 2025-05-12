@@ -11,8 +11,6 @@ const (
 )
 
 type Renderer struct {
-	texture int32
-
 	level  *Level
 	chunks []*Chunk
 
@@ -21,13 +19,12 @@ type Renderer struct {
 	Tessellator *Tessellator
 }
 
-func NewRenderer(level *Level, texture int32) *Renderer {
+func NewRenderer(level *Level) *Renderer {
 	renderer := new(Renderer)
 
 	renderer.Tessellator = NewTessellator()
 
 	renderer.level = level
-	renderer.texture = texture
 
 	level.AddListener(renderer)
 
@@ -67,16 +64,20 @@ func NewRenderer(level *Level, texture int32) *Renderer {
 	return renderer
 }
 
-func (renderer *Renderer) Render(player *Player, layer int) {
+func (renderer *Renderer) Render(player *Player, layer int) error {
 	ChunkRebuiltThisFrame = 0
 
 	frustum := GetFrustum()
 
 	for _, chunk := range renderer.chunks {
-		if frustum.CubeInFrustumAABB(chunk.AABB) {
-			chunk.Render(layer, renderer.texture)
+		if frustum.CubeInFrustumAABB(chunk.BoundingBox) {
+			if err := chunk.Render(layer); err != nil {
+				return err
+			}
 		}
 	}
+
+	return nil
 }
 
 func (renderer *Renderer) SetDirty(x0, y0, z0, x1, y1, z1 int) {
@@ -117,15 +118,15 @@ func (renderer *Renderer) SetDirty(x0, y0, z0, x1, y1, z1 int) {
 }
 
 func (renderer *Renderer) Pick(player *Player) {
-	radius := 3.0
-	boundingBox := player.BoundingBox.Grow(radius, radius, radius)
+	radius := float32(3.0)
+	boundingBox := player.Entity.BoundingBox.Grow(radius, radius, radius)
 
-	x0 := int(boundingBox.X0)
-	x1 := int(boundingBox.X1 + 1)
-	y0 := int(boundingBox.Y0)
-	y1 := int(boundingBox.Y1 + 1)
-	z0 := int(boundingBox.Z0)
-	z1 := int(boundingBox.Z1 + 1)
+	x0 := int(boundingBox.MinX)
+	x1 := int(boundingBox.MaxX + 1)
+	y0 := int(boundingBox.MinY)
+	y1 := int(boundingBox.MaxY + 1)
+	z0 := int(boundingBox.MinZ)
+	z1 := int(boundingBox.MaxZ + 1)
 
 	gl.InitNames()
 	for x := x0; x < x1; x++ {

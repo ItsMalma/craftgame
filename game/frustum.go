@@ -2,7 +2,8 @@ package game
 
 import (
 	"craftgame/pkg/gl"
-	"math"
+
+	"github.com/chewxy/math32"
 )
 
 type FrustumSide int
@@ -53,11 +54,11 @@ func GetFrustum() *Frustum {
 }
 
 func (frustum *Frustum) NormalizePlane(side FrustumSide) {
-	magnitude := float32(math.Sqrt(float64(
+	magnitude := math32.Sqrt(
 		frustum.matrix[side][FrustumA]*frustum.matrix[side][FrustumA] +
 			frustum.matrix[side][FrustumB]*frustum.matrix[side][FrustumB] +
 			frustum.matrix[side][FrustumC]*frustum.matrix[side][FrustumC],
-	)))
+	)
 
 	frustum.matrix[side][FrustumA] /= magnitude
 	frustum.matrix[side][FrustumB] /= magnitude
@@ -126,30 +127,30 @@ func (frustum *Frustum) CalculateFrustum() {
 	frustum.NormalizePlane(FrustumFront)
 }
 
-func (frustum *Frustum) CubeFullyInFrustum(x1, y1, z1, x2, y2, z2 float32) bool {
+func (frustum *Frustum) CubeFullyInFrustum(minX, minY, minZ, maxX, maxY, maxZ float32) bool {
 	for i := range 6 {
-		if frustum.matrix[i][FrustumA]*x1+frustum.matrix[i][FrustumB]*y1+frustum.matrix[i][FrustumC]*z1+frustum.matrix[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*minX+frustum.matrix[i][FrustumB]*minY+frustum.matrix[i][FrustumC]*minZ+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.matrix[i][FrustumA]*x2+frustum.matrix[i][FrustumB]*y1+frustum.matrix[i][FrustumC]*z1+frustum.matrix[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*maxX+frustum.matrix[i][FrustumB]*minY+frustum.matrix[i][FrustumC]*minZ+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.matrix[i][FrustumA]*x1+frustum.matrix[i][FrustumB]*y2+frustum.matrix[i][FrustumC]*z1+frustum.matrix[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*minX+frustum.matrix[i][FrustumB]*maxY+frustum.matrix[i][FrustumC]*minZ+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.matrix[i][FrustumA]*x2+frustum.matrix[i][FrustumB]*y2+frustum.matrix[i][FrustumC]*z1+frustum.matrix[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*maxX+frustum.matrix[i][FrustumB]*maxY+frustum.matrix[i][FrustumC]*minZ+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.matrix[i][FrustumA]*x1+frustum.matrix[i][FrustumB]*y1+frustum.matrix[i][FrustumC]*z2+frustum.matrix[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*minX+frustum.matrix[i][FrustumB]*minY+frustum.matrix[i][FrustumC]*maxZ+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.matrix[i][FrustumA]*x2+frustum.matrix[i][FrustumB]*y1+frustum.matrix[i][FrustumC]*z2+frustum.matrix[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*maxX+frustum.matrix[i][FrustumB]*minY+frustum.matrix[i][FrustumC]*maxZ+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.matrix[i][FrustumA]*x1+frustum.matrix[i][FrustumB]*y2+frustum.matrix[i][FrustumC]*z2+frustum.matrix[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*minX+frustum.matrix[i][FrustumB]*maxY+frustum.matrix[i][FrustumC]*maxZ+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.matrix[i][FrustumA]*x2+frustum.matrix[i][FrustumB]*y2+frustum.matrix[i][FrustumC]*z2+frustum.matrix[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*maxX+frustum.matrix[i][FrustumB]*maxY+frustum.matrix[i][FrustumC]*maxZ+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
 
@@ -159,16 +160,16 @@ func (frustum *Frustum) CubeFullyInFrustum(x1, y1, z1, x2, y2, z2 float32) bool 
 	return true
 }
 
-func (frustum *Frustum) CubeInFrustum(x1, y1, z1, x2, y2, z2 float32) bool {
+func (frustum *Frustum) CubeInFrustum(minX, minY, minZ, maxX, maxY, maxZ float32) bool {
 	for i := range 6 {
-		if !(frustum.matrix[i][0]*x1+frustum.matrix[i][1]*y1+frustum.matrix[i][2]*z1+frustum.matrix[i][3] > 0.0) &&
-			!(frustum.matrix[i][0]*x2+frustum.matrix[i][1]*y1+frustum.matrix[i][2]*z1+frustum.matrix[i][3] > 0.0) &&
-			!(frustum.matrix[i][0]*x1+frustum.matrix[i][1]*y2+frustum.matrix[i][2]*z1+frustum.matrix[i][3] > 0.0) &&
-			!(frustum.matrix[i][0]*x2+frustum.matrix[i][1]*y2+frustum.matrix[i][2]*z1+frustum.matrix[i][3] > 0.0) &&
-			!(frustum.matrix[i][0]*x1+frustum.matrix[i][1]*y1+frustum.matrix[i][2]*z2+frustum.matrix[i][3] > 0.0) &&
-			!(frustum.matrix[i][0]*x2+frustum.matrix[i][1]*y1+frustum.matrix[i][2]*z2+frustum.matrix[i][3] > 0.0) &&
-			!(frustum.matrix[i][0]*x1+frustum.matrix[i][1]*y2+frustum.matrix[i][2]*z2+frustum.matrix[i][3] > 0.0) &&
-			!(frustum.matrix[i][0]*x2+frustum.matrix[i][1]*y2+frustum.matrix[i][2]*z2+frustum.matrix[i][3] > 0.0) {
+		if !(frustum.matrix[i][0]*minX+frustum.matrix[i][1]*minY+frustum.matrix[i][2]*minZ+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*maxX+frustum.matrix[i][1]*minY+frustum.matrix[i][2]*minZ+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*minX+frustum.matrix[i][1]*maxY+frustum.matrix[i][2]*minZ+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*maxX+frustum.matrix[i][1]*maxY+frustum.matrix[i][2]*minZ+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*minX+frustum.matrix[i][1]*minY+frustum.matrix[i][2]*maxZ+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*maxX+frustum.matrix[i][1]*minY+frustum.matrix[i][2]*maxZ+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*minX+frustum.matrix[i][1]*maxY+frustum.matrix[i][2]*maxZ+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*maxX+frustum.matrix[i][1]*maxY+frustum.matrix[i][2]*maxZ+frustum.matrix[i][3] > 0.0) {
 			return false
 		}
 	}
@@ -178,11 +179,11 @@ func (frustum *Frustum) CubeInFrustum(x1, y1, z1, x2, y2, z2 float32) bool {
 
 func (frustum *Frustum) CubeInFrustumAABB(aabb AABB) bool {
 	return frustum.CubeInFrustum(
-		float32(aabb.X0),
-		float32(aabb.Y0),
-		float32(aabb.Z0),
-		float32(aabb.X1),
-		float32(aabb.Y1),
-		float32(aabb.Z1),
+		aabb.MinX,
+		aabb.MinY,
+		aabb.MinZ,
+		aabb.MaxX,
+		aabb.MaxY,
+		aabb.MaxZ,
 	)
 }

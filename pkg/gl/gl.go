@@ -81,12 +81,24 @@ func LoadIdentity() {
 	C.glLoadIdentity()
 }
 
+func Scalef(x, y, z float32) {
+	C.glScalef(C.GLfloat(x), C.GLfloat(y), C.GLfloat(z))
+}
+
+func Scaled(x, y, z float64) {
+	C.glScaled(C.GLdouble(x), C.GLdouble(y), C.GLdouble(z))
+}
+
 func Translatef(x, y, z float32) {
 	C.glTranslatef(C.GLfloat(x), C.GLfloat(y), C.GLfloat(z))
 }
 
 func Translated(x, y, z float64) {
 	C.glTranslated(C.GLdouble(x), C.GLdouble(y), C.GLdouble(z))
+}
+
+func Rotatef(angle, x, y, z float32) {
+	C.glRotatef(C.GLfloat(angle), C.GLfloat(x), C.GLfloat(y), C.GLfloat(z))
 }
 
 func Rotated(angle, x, y, z float64) {
@@ -133,8 +145,16 @@ func GetIntegerv(pname uint32, params *int) {
 	C.glGetIntegerv(C.GLenum(pname), (*C.GLint)(unsafe.Pointer(params)))
 }
 
+func Vertex3f(x, y, z float32) {
+	C.glVertex3f(C.GLfloat(x), C.GLfloat(y), C.GLfloat(z))
+}
+
 func VertexPointer(size int32, typeName uint32, stride int32, data *float32) {
 	C.glVertexPointer(C.GLint(size), C.GLenum(typeName), C.GLsizei(stride), unsafe.Pointer(data))
+}
+
+func TexCoord2f(s, t float32) {
+	C.glTexCoord2f(C.GLfloat(s), C.GLfloat(t))
 }
 
 func TexCoordPointer(size int32, typeName uint32, stride int32, data *float32) {
@@ -177,6 +197,10 @@ func PopName() {
 	C.glPopName()
 }
 
+func Color3f(red, green, blue float32) {
+	C.glColor3f(C.GLfloat(red), C.GLfloat(green), C.GLfloat(blue))
+}
+
 func Color4f(red, green, blue, alpha float32) {
 	C.glColor4f(C.GLfloat(red), C.GLfloat(green), C.GLfloat(blue), C.GLfloat(alpha))
 }
@@ -191,4 +215,20 @@ func SelectBuffer(size int32, buffer *uint32) {
 
 func RenderMode(mode uint32) int {
 	return int(C.glRenderMode(C.GLenum(mode)))
+}
+
+func PushMatrix() {
+	C.glPushMatrix()
+}
+
+func PopMatrix() {
+	C.glPopMatrix()
+}
+
+func Begin(mode int) {
+	C.glBegin(C.GLenum(mode))
+}
+
+func End() {
+	C.glEnd()
 }
