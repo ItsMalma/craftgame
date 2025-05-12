@@ -5,16 +5,17 @@ import (
 	"craftgame/pkg/glu"
 	_ "image/jpeg"
 	_ "image/png"
+	"log"
 
 	"bytes"
 	"image"
 	"image/color"
-	"math"
 	"os"
 )
 
 var idMap = map[string]int32{}
-var lastId int32 = math.MinInt32
+
+// var lastId int32 = math.MinInt32
 
 func LoadTexture(resourceName string, mode int32) (int32, error) {
 	if id, exists := idMap[resourceName]; exists {
@@ -24,8 +25,10 @@ func LoadTexture(resourceName string, mode int32) (int32, error) {
 	var id int32
 	gl.GenTextures(1, &id)
 
-	BindTexture(id)
+	idMap[resourceName] = id
+	log.Printf("%s -> %d", resourceName, id)
 
+	gl.BindTexture(gl.Texture2D, id)
 	gl.TexParameteri(gl.Texture2D, gl.TextureMinFilter, mode)
 	gl.TexParameteri(gl.Texture2D, gl.TextureMagFilter, mode)
 
@@ -63,11 +66,4 @@ func LoadTexture(resourceName string, mode int32) (int32, error) {
 	glu.Build2DMipmaps(gl.Texture2D, gl.RGBA, int32(width), int32(height), gl.RGBA, gl.UnsignedByte, &pixels[0])
 
 	return id, nil
-}
-
-func BindTexture(id int32) {
-	if id != lastId {
-		gl.BindTexture(gl.Texture2D, id)
-		lastId = id
-	}
 }

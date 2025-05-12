@@ -5,7 +5,7 @@ import (
 	"craftgame/pkg/glfw"
 	"craftgame/pkg/glu"
 	"errors"
-	"fmt"
+	"log"
 	"time"
 )
 
@@ -26,6 +26,8 @@ type Game struct {
 	level    *Level
 	renderer *Renderer
 	player   *Player
+
+	bobs []*Bob
 
 	viewportBuffer [16]int
 	selectBuffer   [2000]uint32
@@ -67,6 +69,7 @@ func NewGame() (*Game, error) {
 		"CraftGame",
 		nil, nil,
 	)
+	glfw.SetInputMode(game.window, glfw.CursorMode, glfw.CursorDisabled)
 	glfw.MakeContextCurrent(game.window)
 	glfw.SwapInterval(0)
 
@@ -75,7 +78,6 @@ func NewGame() (*Game, error) {
 	gl.ClearColor(fogRed, fogGreen, fogBlue, 0.0)
 	gl.ClearDepth(1.0)
 	gl.Enable(gl.DepthTest)
-	// gl.Enable(gl.CullFace)
 	gl.DepthFunc(gl.Lequal)
 	gl.MatrixMode(gl.Projection)
 	gl.LoadIdentity()
@@ -83,38 +85,40 @@ func NewGame() (*Game, error) {
 
 	var err error
 
-	texture, err := LoadTexture("terrain.png", gl.Nearest)
-	if err != nil {
-		return nil, err
-	}
-
 	game.level, err = NewLevel(256, 256, 64)
 	if err != nil {
 		return nil, err
 	}
-	game.renderer = NewRenderer(game.level, texture)
+	game.renderer = NewRenderer(game.level)
 	game.player = NewPlayer(game.level)
 
-	glfw.SetInputMode(game.window, glfw.CursorMode, glfw.CursorDisabled)
+	game.bobs = make([]*Bob, 100)
+	for i := range 100 {
+		game.bobs[i] = NewBob(game.level, 128, 0, 128)
+	}
 
 	return game, nil
 }
 
 func (game *Game) tick() {
+	for _, bob := range game.bobs {
+		bob.Tick()
+	}
+
 	game.player.Tick(game.window)
 }
 
 func (game *Game) moveCameraToPlayer() {
 	gl.Translatef(0.0, 0.0, -0.3)
 
-	gl.Rotated(game.player.XRotation, 1.0, 0.0, 0.0)
-	gl.Rotated(game.player.YRotation, 0.0, 1.0, 0.0)
+	gl.Rotatef(game.player.Entity.XRotation, 1.0, 0.0, 0.0)
+	gl.Rotatef(game.player.Entity.YRotation, 0.0, 1.0, 0.0)
 
-	x := game.player.PrevX + (game.player.X-game.player.PrevX)*float64(game.timer.PartialTicks)
-	y := game.player.PrevY + (game.player.Y-game.player.PrevY)*float64(game.timer.PartialTicks)
-	z := game.player.PrevZ + (game.player.Z-game.player.PrevZ)*float64(game.timer.PartialTicks)
+	x := game.player.Entity.PrevX + (game.player.Entity.X-game.player.Entity.PrevX)*game.timer.PartialTicks
+	y := game.player.Entity.PrevY + (game.player.Entity.Y-game.player.Entity.PrevY)*game.timer.PartialTicks
+	z := game.player.Entity.PrevZ + (game.player.Entity.Z-game.player.Entity.PrevZ)*game.timer.PartialTicks
 
-	gl.Translated(-x, -y, -z)
+	gl.Translatef(-x, -y, -z)
 }
 
 func (game *Game) setupCamera() {
@@ -198,7 +202,7 @@ func (game *Game) render() {
 	game.lastMouseX = currentMouseX
 	game.lastMouseY = currentMouseY
 
-	game.player.Turn(motionX, motionY)
+	game.player.Entity.Turn(float32(motionX), float32(motionY))
 
 	game.pick()
 
@@ -208,9 +212,10 @@ func (game *Game) render() {
 	}
 	game.prevLeftMbState = leftMbState
 
+	x := 0
 	rightMbState := glfw.GetMouseButton(game.window, glfw.MouseButton2)
 	if rightMbState == glfw.Press && game.prevRightMbState == glfw.Release && game.hitResult != nil {
-		x := game.hitResult.X
+		x = game.hitResult.X
 		y := game.hitResult.Y
 		z := game.hitResult.Z
 
@@ -253,10 +258,15 @@ func (game *Game) render() {
 	gl.Fogfv(gl.FogColor, &game.fogColor[0])
 	gl.Disable(gl.Fog)
 
-	// gl.Fogf(gl.FogStart, -10)
-	// gl.Fogf(gl.FogEnd, 20)
+	if err := game.renderer.Render(game.player, 0); err != nil {
+		panic(err)
+	}
 
-	game.renderer.Render(game.player, 0)
+	for _, bob := range game.bobs {
+		if err := bob.Render(game.timer.PartialTicks); err != nil {
+			panic(err)
+		}
+	}
 
 	gl.Enable(gl.Fog)
 
@@ -269,6 +279,8 @@ func (game *Game) render() {
 	}
 
 	gl.Disable(gl.Fog)
+
+	// model.NewCube(0, 0)
 
 	glfw.SwapBuffers(game.window)
 	glfw.PollEvents()
@@ -296,7 +308,7 @@ func (game *Game) Run() {
 		frames++
 
 		for time.Now().UnixMilli() >= lastTime+1000 {
-			fmt.Printf("FPS: %d | Chunk: %d\n", frames, ChunkUpdates)
+			log.Printf("FPS: %d | Chunk: %d\n", frames, ChunkUpdates)
 
 			ChunkUpdates = 0
 

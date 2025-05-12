@@ -196,12 +196,12 @@ func (level *Level) GetBrightness(x, y, z int) float32 {
 func (level *Level) GetCubes(boundingBox AABB) []AABB {
 	boundingBoxes := []AABB{}
 
-	x0 := int(boundingBox.X0)
-	x1 := int(boundingBox.X1 + 1.0)
-	y0 := int(boundingBox.Y0)
-	y1 := int(boundingBox.Y1 + 1.0)
-	z0 := int(boundingBox.Z0)
-	z1 := int(boundingBox.Z1 + 1.0)
+	x0 := int(boundingBox.MinX)
+	x1 := int(boundingBox.MaxX + 1.0)
+	y0 := int(boundingBox.MinY)
+	y1 := int(boundingBox.MaxY + 1.0)
+	z0 := int(boundingBox.MinZ)
+	z1 := int(boundingBox.MaxZ + 1.0)
 
 	if x0 < 0 {
 		x0 = 0
@@ -230,8 +230,8 @@ func (level *Level) GetCubes(boundingBox AABB) []AABB {
 					boundingBoxes = append(
 						boundingBoxes,
 						NewAABB(
-							float64(x), float64(y), float64(z),
-							float64(x)+1, float64(y)+1, float64(z)+1,
+							float32(x), float32(y), float32(z),
+							float32(x)+1, float32(y)+1, float32(z)+1,
 						),
 					)
 				}
