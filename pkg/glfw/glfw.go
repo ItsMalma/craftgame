@@ -6,6 +6,9 @@ package glfw
 import "C"
 
 const (
+	ContextVersionMajor = C.GLFW_CONTEXT_VERSION_MAJOR
+	ContextVersionMinor = C.GLFW_CONTEXT_VERSION_MINOR
+
 	CursorMode     = C.GLFW_CURSOR
 	CursorDisabled = C.GLFW_CURSOR_DISABLED
 
@@ -17,6 +20,10 @@ const (
 	KeyD      = C.GLFW_KEY_D
 	KeySpace  = C.GLFW_KEY_SPACE
 	Press     = C.GLFW_PRESS
+	Release   = C.GLFW_RELEASE
+
+	MouseButton1 = C.GLFW_MOUSE_BUTTON_1
+	MouseButton2 = C.GLFW_MOUSE_BUTTON_2
 )
 
 type Window = C.GLFWwindow
@@ -27,6 +34,10 @@ func Init() bool {
 
 func Terminate() {
 	C.glfwTerminate()
+}
+
+func WindowHint(hint int, value int) {
+	C.glfwWindowHint(C.int(hint), C.int(value))
 }
 
 func CreateWindow(
@@ -76,6 +87,10 @@ func SetShouldClose(window *Window, value bool) {
 
 func GetKey(window *Window, key int) int {
 	return int(C.glfwGetKey(window, C.int(key)))
+}
+
+func GetMouseButton(window *Window, button int) int {
+	return int(C.glfwGetMouseButton(window, C.int(button)))
 }
 
 func SwapBuffers(window *Window) {

@@ -3,18 +3,22 @@ package game
 import (
 	"compress/gzip"
 	"io"
-	"math"
-	"math/rand"
 	"os"
-
-	"github.com/chewxy/math32"
 )
+
+type LevelListener interface {
+	LightColumnChanged(x, z, minY, maxY int)
+	TileChanged(x, y, z int)
+	AllChanged()
+}
 
 type Level struct {
 	Width, Height, Depth int
 
 	blocks      []byte
-	lightDepths []byte
+	lightDepths []int
+
+	listeners []LevelListener
 }
 
 func NewLevel(width, height, depth int) (*Level, error) {
@@ -25,60 +29,63 @@ func NewLevel(width, height, depth int) (*Level, error) {
 	level.Depth = depth
 
 	level.blocks = make([]byte, width*height*depth)
-	level.lightDepths = make([]byte, width*height)
+	level.lightDepths = make([]int, width*height)
 
-	_, err := os.Stat("level.dat")
-	if err == nil || os.IsExist(err) {
-		err := level.Load()
-		return level, err
-	} else if !os.IsNotExist(err) {
-		return nil, err
-	}
+	level.listeners = []LevelListener{}
 
 	for x := range width {
 		for y := range depth {
 			for z := range height {
 				index := (y*height+z)*width + x
 
-				level.blocks[index] = 1
-			}
-		}
-	}
-
-	for range 10000 {
-		caveSize := rand.Intn(7) + 1
-
-		caveX := rand.Intn(width)
-		caveY := rand.Intn(height)
-		caveZ := rand.Intn(depth)
-
-		for radius := range caveSize {
-			for range 1000 {
-				offsetX := int(rand.Float32()*float32(radius)*2.0 - float32(radius))
-				offsetY := int(rand.Float32()*float32(radius)*2.0 - float32(radius))
-				offsetZ := int(rand.Float32()*float32(radius)*2.0 - float32(radius))
-
-				distance := math32.Pow(float32(offsetX), 2) + math32.Pow(float32(offsetY), 2) + math32.Pow(float32(offsetZ), 2)
-				if distance > float32(radius)*float32(radius) {
-					continue
+				var block byte = 0
+				if y <= depth*2/3 {
+					block = 1
 				}
 
-				tileX := caveX + offsetX
-				tileY := caveY + offsetY
-				tileZ := caveZ + offsetZ
-
-				index := (tileY*height+tileZ)*width + tileX
-
-				if index >= 0 && index < len(level.blocks) {
-					if tileX > 0 && tileY > 0 && tileZ > 0 && tileX < width-1 && tileY < depth && tileZ < height-1 {
-						level.blocks[index] = 0
-					}
-				}
+				level.blocks[index] = block
 			}
 		}
 	}
 
 	level.calculateLightDepths(0, 0, width, height)
+
+	if err := level.Load(); err != nil {
+		return nil, err
+	}
+
+	// for range 10000 {
+	// 	caveSize := rand.Intn(7) + 1
+
+	// 	caveX := rand.Intn(width)
+	// 	caveY := rand.Intn(height)
+	// 	caveZ := rand.Intn(depth)
+
+	// 	for radius := range caveSize {
+	// 		for range 1000 {
+	// 			offsetX := int(rand.Float32()*float32(radius)*2.0 - float32(radius))
+	// 			offsetY := int(rand.Float32()*float32(radius)*2.0 - float32(radius))
+	// 			offsetZ := int(rand.Float32()*float32(radius)*2.0 - float32(radius))
+
+	// 			distance := math32.Pow(float32(offsetX), 2) + math32.Pow(float32(offsetY), 2) + math32.Pow(float32(offsetZ), 2)
+	// 			if distance > float32(radius)*float32(radius) {
+	// 				continue
+	// 			}
+
+	// 			tileX := caveX + offsetX
+	// 			tileY := caveY + offsetY
+	// 			tileZ := caveZ + offsetZ
+
+	// 			index := (tileY*height+tileZ)*width + tileX
+
+	// 			if index >= 0 && index < len(level.blocks) {
+	// 				if tileX > 0 && tileY > 0 && tileZ > 0 && tileX < width-1 && tileY < depth && tileZ < height-1 {
+	// 					level.blocks[index] = 0
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	return level, nil
 }
@@ -86,6 +93,9 @@ func NewLevel(width, height, depth int) (*Level, error) {
 func (level *Level) Load() error {
 	levelFile, err := os.Open("level.dat")
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
 		return err
 	}
 	defer levelFile.Close()
@@ -102,6 +112,10 @@ func (level *Level) Load() error {
 	}
 
 	level.calculateLightDepths(0, 0, level.Width, level.Height)
+
+	for _, listener := range level.listeners {
+		listener.AllChanged()
+	}
 
 	return nil
 }
@@ -124,29 +138,36 @@ func (level *Level) Save() error {
 	return nil
 }
 
-func (level *Level) calculateLightDepths(minX, minZ, maxX, maxZ int) {
-	for x := minX; x < minX+maxX; x++ {
-		for z := minZ; z < minZ+maxZ; z++ {
-			// prevDepth := level.lightDepths[x+z*level.Width]
+func (level *Level) calculateLightDepths(x0, y0, x1, y1 int) {
+	for x := x0; x < x0+x1; x++ {
+		for z := y0; z < y0+y1; z++ {
+			oldDepth := level.lightDepths[x+z*level.Width]
 
-			depth := level.Depth - 1
-			for depth > 0 && !level.IsLightBlocker(x, depth, z) {
-				depth--
+			y := level.Depth - 1
+			for y > 0 && !level.IsLightBlocker(x, y, z) {
+				y--
 			}
 
-			level.lightDepths[x+z*level.Width] = byte(depth)
+			level.lightDepths[x+z*level.Width] = y
+
+			if oldDepth != y {
+				yl0 := min(oldDepth, y)
+				yl1 := max(oldDepth, y)
+
+				for _, listener := range level.listeners {
+					listener.LightColumnChanged(x, z, yl0, yl1)
+				}
+			}
 		}
 	}
 }
 
 func (level *Level) IsTile(x, y, z int) bool {
-	if x < 0 || y < 0 || z < 0 || x >= level.Width || y >= level.Depth || z >= level.Height {
-		return false
+	if x >= 0 && y >= 0 && z >= 0 && x < level.Width && y < level.Depth && z < level.Height {
+		return level.blocks[(y*level.Height+z)*level.Width+x] == 1
 	}
 
-	index := (y*level.Height+z)*level.Width + x
-
-	return level.blocks[index] != 0
+	return false
 }
 
 func (level *Level) IsSolidTile(x, y, z int) bool {
@@ -158,41 +179,53 @@ func (level *Level) IsLightBlocker(x, y, z int) bool {
 }
 
 func (level *Level) GetBrightness(x, y, z int) float32 {
-	dark := 0.8
-	light := 1.0
+	var dark float32 = 0.8
+	var light float32 = 1.0
 
-	if x < 0 || y < 0 || z < 0 || x >= level.Width || y >= level.Depth || z >= level.Height {
-		return float32(light)
+	if x >= 0 && y >= 0 && z >= 0 && x < level.Width && y < level.Depth && z < level.Height {
+		if y < level.lightDepths[x+z*level.Width] {
+			return dark
+		} else {
+			return light
+		}
+	} else {
+		return light
 	}
-
-	if y < int(level.lightDepths[x+z*level.Width]) {
-		return float32(dark)
-	}
-
-	return float32(light)
 }
 
 func (level *Level) GetCubes(boundingBox AABB) []AABB {
 	boundingBoxes := []AABB{}
 
-	minX := int(math.Floor(boundingBox.MinX) - 1)
-	maxX := int(math.Ceil(boundingBox.MaxX) + 1)
-	minY := int(math.Floor(boundingBox.MinY) - 1)
-	maxY := int(math.Ceil(boundingBox.MaxY) + 1)
-	minZ := int(math.Floor(boundingBox.MinZ) - 1)
-	maxZ := int(math.Ceil(boundingBox.MaxZ) + 1)
+	x0 := int(boundingBox.X0)
+	x1 := int(boundingBox.X1 + 1.0)
+	y0 := int(boundingBox.Y0)
+	y1 := int(boundingBox.Y1 + 1.0)
+	z0 := int(boundingBox.Z0)
+	z1 := int(boundingBox.Z1 + 1.0)
 
-	minX = max(0, minX)
-	minY = max(0, minY)
-	minZ = max(0, minZ)
+	if x0 < 0 {
+		x0 = 0
+	}
+	if y0 < 0 {
+		y0 = 0
+	}
+	if z0 < 0 {
+		z0 = 0
+	}
 
-	maxX = min(level.Width, maxX)
-	maxY = min(level.Depth, maxY)
-	maxZ = min(level.Height, maxZ)
+	if x1 > level.Width {
+		x1 = level.Width
+	}
+	if y1 > level.Depth {
+		y1 = level.Depth
+	}
+	if z1 > level.Height {
+		z1 = level.Height
+	}
 
-	for x := minX; x < maxX; x++ {
-		for y := minY; y < maxY; y++ {
-			for z := minZ; z < maxZ; z++ {
+	for x := x0; x < x1; x++ {
+		for y := y0; y < y1; y++ {
+			for z := z0; z < z1; z++ {
 				if level.IsSolidTile(x, y, z) {
 					boundingBoxes = append(
 						boundingBoxes,
@@ -207,4 +240,19 @@ func (level *Level) GetCubes(boundingBox AABB) []AABB {
 	}
 
 	return boundingBoxes
+}
+
+func (level *Level) SetTile(x, y, z, id int) {
+	if x >= 0 && y >= 0 && z >= 0 && x < level.Width && y < level.Depth && z < level.Height {
+		level.blocks[(y*level.Height+z)*level.Width+x] = byte(id)
+		level.calculateLightDepths(x, z, 1, 1)
+
+		for _, listener := range level.listeners {
+			listener.TileChanged(x, y, z)
+		}
+	}
+}
+
+func (level *Level) AddListener(listener LevelListener) {
+	level.listeners = append(level.listeners, listener)
 }

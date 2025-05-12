@@ -7,51 +7,52 @@ const (
 )
 
 type Tessellator struct {
-	vertex            []float32
-	textureCoordinate []float32
-	color             []float32
+	vertexBuffer   []float32
+	texCoordBuffer []float32
+	colorBuffer    []float32
 
 	vertices int
 
-	hasTexture bool
-	textureU   float32
-	textureV   float32
+	u, v    float32
+	r, g, b float32
 
-	hasColor bool
-	colorR   float32
-	colorG   float32
-	colorB   float32
+	hasColor   bool
+	hasTexture bool
 }
 
 func NewTessellator() *Tessellator {
 	tessellator := new(Tessellator)
 
-	tessellator.vertex = make([]float32, tessellatorMaxVertices*3)
-	tessellator.textureCoordinate = make([]float32, tessellatorMaxVertices*2)
-	tessellator.color = make([]float32, tessellatorMaxVertices*3)
+	tessellator.vertexBuffer = make([]float32, tessellatorMaxVertices*3)
+	tessellator.texCoordBuffer = make([]float32, tessellatorMaxVertices*2)
+	tessellator.colorBuffer = make([]float32, tessellatorMaxVertices*3)
 	tessellator.vertices = 0
+	tessellator.hasColor = false
+	tessellator.hasTexture = false
 
 	return tessellator
 }
 
 func (tessellator *Tessellator) Init() {
 	tessellator.clear()
+	tessellator.hasColor = false
+	tessellator.hasTexture = false
 }
 
 func (tessellator *Tessellator) Vertex(x, y, z float32) {
-	tessellator.vertex[tessellator.vertices*3] = x
-	tessellator.vertex[tessellator.vertices*3+1] = y
-	tessellator.vertex[tessellator.vertices*3+2] = z
+	tessellator.vertexBuffer[tessellator.vertices*3+0] = x
+	tessellator.vertexBuffer[tessellator.vertices*3+1] = y
+	tessellator.vertexBuffer[tessellator.vertices*3+2] = z
 
 	if tessellator.hasTexture {
-		tessellator.textureCoordinate[tessellator.vertices*2] = tessellator.textureU
-		tessellator.textureCoordinate[tessellator.vertices*2+1] = tessellator.textureV
+		tessellator.texCoordBuffer[tessellator.vertices*2+0] = tessellator.u
+		tessellator.texCoordBuffer[tessellator.vertices*2+1] = tessellator.v
 	}
 
 	if tessellator.hasColor {
-		tessellator.color[tessellator.vertices*3] = tessellator.colorR
-		tessellator.color[tessellator.vertices*3+1] = tessellator.colorG
-		tessellator.color[tessellator.vertices*3+2] = tessellator.colorB
+		tessellator.colorBuffer[tessellator.vertices*3+0] = tessellator.r
+		tessellator.colorBuffer[tessellator.vertices*3+1] = tessellator.g
+		tessellator.colorBuffer[tessellator.vertices*3+2] = tessellator.b
 	}
 
 	tessellator.vertices++
@@ -61,26 +62,26 @@ func (tessellator *Tessellator) Vertex(x, y, z float32) {
 	}
 }
 
-func (tessellator *Tessellator) Texture(u, v float32) {
+func (tessellator *Tessellator) Tex(u, v float32) {
 	tessellator.hasTexture = true
-	tessellator.textureU = u
-	tessellator.textureV = v
+	tessellator.u = u
+	tessellator.v = v
 }
 
 func (tessellator *Tessellator) Color(r, g, b float32) {
 	tessellator.hasColor = true
-	tessellator.colorR = r
-	tessellator.colorG = g
-	tessellator.colorB = b
+	tessellator.r = r
+	tessellator.g = g
+	tessellator.b = b
 }
 
 func (tessellator *Tessellator) Flush() {
-	gl.VertexPointer(3, gl.Float, 0, &tessellator.vertex[0])
+	gl.VertexPointer(3, gl.Float, 0, &tessellator.vertexBuffer[0])
 	if tessellator.hasTexture {
-		gl.TexCoordPointer(2, gl.Float, 0, &tessellator.textureCoordinate[0])
+		gl.TexCoordPointer(2, gl.Float, 0, &tessellator.texCoordBuffer[0])
 	}
 	if tessellator.hasColor {
-		gl.ColorPointer(3, gl.Float, 0, &tessellator.color[0])
+		gl.ColorPointer(3, gl.Float, 0, &tessellator.colorBuffer[0])
 	}
 
 	gl.EnableClientState(gl.VertexArray)
@@ -106,6 +107,4 @@ func (tessellator *Tessellator) Flush() {
 
 func (tessellator *Tessellator) clear() {
 	tessellator.vertices = 0
-	tessellator.hasTexture = false
-	tessellator.hasColor = false
 }

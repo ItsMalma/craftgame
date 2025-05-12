@@ -27,3 +27,13 @@ func Build2DMipmaps(target, internalFormat, width, height, format, typ int32, da
 		unsafe.Pointer(data),
 	))
 }
+
+func PickMatrix(x, y, delX, delY float64, viewport *int) {
+	C.gluPickMatrix(
+		C.GLdouble(x),
+		C.GLdouble(y),
+		C.GLdouble(delX),
+		C.GLdouble(delY),
+		(*C.GLint)(unsafe.Pointer(viewport)),
+	)
+}

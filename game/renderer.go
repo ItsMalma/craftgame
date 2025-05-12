@@ -1,60 +1,188 @@
 package game
 
+import (
+	"craftgame/pkg/gl"
+	"math"
+	"time"
+)
+
 const (
-	chunkSize = 8
+	chunkSize = 16
 )
 
 type Renderer struct {
-	chunkAmountX, chunkAmountY, chunkAmountZ int
+	texture int32
 
+	level  *Level
 	chunks []*Chunk
 
-	texture int32
+	xChunks, yChunks, zChunks int
+
+	Tessellator *Tessellator
 }
 
 func NewRenderer(level *Level, texture int32) *Renderer {
 	renderer := new(Renderer)
 
-	renderer.chunkAmountX = level.Width / chunkSize
-	renderer.chunkAmountY = level.Depth / chunkSize
-	renderer.chunkAmountZ = level.Height / chunkSize
+	renderer.Tessellator = NewTessellator()
 
-	renderer.chunks = make([]*Chunk, renderer.chunkAmountX*renderer.chunkAmountY*renderer.chunkAmountZ)
+	renderer.level = level
+	renderer.texture = texture
 
-	for x := range renderer.chunkAmountX {
-		for y := range renderer.chunkAmountY {
-			for z := range renderer.chunkAmountZ {
-				minChunkX := x * chunkSize
-				minChunkY := y * chunkSize
-				minChunkZ := z * chunkSize
+	level.AddListener(renderer)
 
-				maxChunkX := (x + 1) * chunkSize
-				maxChunkY := (y + 1) * chunkSize
-				maxChunkZ := (z + 1) * chunkSize
+	renderer.xChunks = level.Width / chunkSize
+	renderer.yChunks = level.Depth / chunkSize
+	renderer.zChunks = level.Height / chunkSize
 
-				maxChunkX = min(maxChunkX, level.Width)
-				maxChunkY = min(maxChunkY, level.Depth)
-				maxChunkZ = min(maxChunkZ, level.Height)
+	renderer.chunks = make([]*Chunk, renderer.xChunks*renderer.yChunks*renderer.zChunks)
 
-				chunk := NewChunk(level, minChunkX, minChunkY, minChunkZ, maxChunkX, maxChunkY, maxChunkZ)
-				renderer.chunks[(x+y*renderer.chunkAmountX)*renderer.chunkAmountZ+z] = chunk
+	for x := range renderer.xChunks {
+		for y := range renderer.yChunks {
+			for z := range renderer.zChunks {
+				x0 := x * chunkSize
+				y0 := y * chunkSize
+				z0 := z * chunkSize
+
+				x1 := (x + 1) * chunkSize
+				y1 := (y + 1) * chunkSize
+				z1 := (z + 1) * chunkSize
+
+				if x1 > level.Width {
+					x1 = level.Width
+				}
+				if y1 > level.Depth {
+					y1 = level.Depth
+				}
+				if z1 > level.Height {
+					z1 = level.Height
+				}
+
+				chunk := NewChunk(level, x0, y0, z0, x1, y1, z1)
+				renderer.chunks[(x+y*renderer.xChunks)*renderer.zChunks+z] = chunk
 			}
 		}
 	}
 
-	renderer.texture = texture
-
 	return renderer
 }
 
-func (renderer *Renderer) Render(layer int) {
-	frustum := GetFrustum()
-
+func (renderer *Renderer) Render(player *Player, layer int) {
 	ChunkRebuiltThisFrame = 0
 
+	frustum := GetFrustum()
+
 	for _, chunk := range renderer.chunks {
-		if frustum.CubeInFrustumAABB(chunk.BoundingBox) {
+		if frustum.CubeInFrustumAABB(chunk.AABB) {
 			chunk.Render(layer, renderer.texture)
 		}
 	}
+}
+
+func (renderer *Renderer) SetDirty(x0, y0, z0, x1, y1, z1 int) {
+	x0 /= chunkSize
+	y0 /= chunkSize
+	z0 /= chunkSize
+	x1 /= chunkSize
+	y1 /= chunkSize
+	z1 /= chunkSize
+
+	if x0 < 0 {
+		x0 = 0
+	}
+	if y0 < 0 {
+		y0 = 0
+	}
+	if z0 < 0 {
+		z0 = 0
+	}
+
+	if x1 >= renderer.xChunks {
+		x1 = renderer.xChunks - 1
+	}
+	if y1 >= renderer.yChunks {
+		y1 = renderer.yChunks - 1
+	}
+	if z1 >= renderer.zChunks {
+		z1 = renderer.zChunks - 1
+	}
+
+	for x := x0; x <= x1; x++ {
+		for y := y0; y <= y1; y++ {
+			for z := z0; z <= z1; z++ {
+				renderer.chunks[(x+y*renderer.xChunks)*renderer.zChunks+z].SetDirty()
+			}
+		}
+	}
+}
+
+func (renderer *Renderer) Pick(player *Player) {
+	radius := 3.0
+	boundingBox := player.BoundingBox.Grow(radius, radius, radius)
+
+	x0 := int(boundingBox.X0)
+	x1 := int(boundingBox.X1 + 1)
+	y0 := int(boundingBox.Y0)
+	y1 := int(boundingBox.Y1 + 1)
+	z0 := int(boundingBox.Z0)
+	z1 := int(boundingBox.Z1 + 1)
+
+	gl.InitNames()
+	for x := x0; x < x1; x++ {
+		gl.PushName(x)
+
+		for y := y0; y < y1; y++ {
+			gl.PushName(y)
+
+			for z := z0; z < z1; z++ {
+				gl.PushName(z)
+
+				if renderer.level.IsSolidTile(x, y, z) {
+					gl.PushName(0)
+
+					for face := range 6 {
+						gl.PushName(face)
+
+						renderer.Tessellator.Init()
+						TileStone.RenderFace(renderer.Tessellator, x, y, z, face)
+						renderer.Tessellator.Flush()
+
+						gl.PopName()
+					}
+
+					gl.PopName()
+				}
+
+				gl.PopName()
+			}
+
+			gl.PopName()
+		}
+
+		gl.PopName()
+	}
+}
+
+func (renderer *Renderer) RenderHit(hitResult *HitResult) {
+	gl.Enable(gl.Blend)
+	gl.BlendFunc(gl.SrcAlpha, gl.CurrentBit)
+	gl.Color4f(1.0, 1.0, 1.0, float32(math.Sin(float64(time.Now().UnixMilli())/100.0)*0.2+0.4))
+
+	renderer.Tessellator.Init()
+	TileStone.RenderFace(renderer.Tessellator, hitResult.X, hitResult.Y, hitResult.Z, hitResult.Face)
+	renderer.Tessellator.Flush()
+
+	gl.Disable(gl.Blend)
+}
+
+func (renderer *Renderer) LightColumnChanged(x, z, y0, y1 int) {
+	renderer.SetDirty(x-1, y0-1, z-1, x+1, y1+1, z+1)
+}
+
+func (renderer *Renderer) TileChanged(x, y, z int) {
+	renderer.SetDirty(x-1, y-1, z-1, x+1, y+1, z+1)
+}
+
+func (renderer *Renderer) AllChanged() {
+	renderer.SetDirty(0, 0, 0, renderer.level.Width, renderer.level.Depth, renderer.level.Height)
 }

@@ -3,138 +3,174 @@ package game
 type AABB struct {
 	epsilon float64
 
-	MinX, MinY, MinZ, MaxX, MaxY, MaxZ float64
+	X0, Y0, Z0, X1, Y1, Z1 float64
 }
 
-func NewAABB(minX, minY, minZ, maxX, maxY, maxZ float64) AABB {
+func NewAABB(x0, y0, z0, x1, y1, z1 float64) AABB {
 	aabb := AABB{}
 
 	aabb.epsilon = 0.0
 
-	aabb.MinX = minX
-	aabb.MinY = minY
-	aabb.MinZ = minZ
-	aabb.MaxX = maxX
-	aabb.MaxY = maxY
-	aabb.MaxZ = maxZ
+	aabb.X0 = x0
+	aabb.Y0 = y0
+	aabb.Z0 = z0
+	aabb.X1 = x1
+	aabb.Y1 = y1
+	aabb.Z1 = z1
 
 	return aabb
 }
 
-func (aabb AABB) Expand(x, y, z float64) AABB {
-	minX := aabb.MinX
-	minY := aabb.MinY
-	minZ := aabb.MinZ
-	maxX := aabb.MaxX
-	maxY := aabb.MaxY
-	maxZ := aabb.MaxZ
+func (aabb AABB) Clone() AABB {
+	return NewAABB(aabb.X0, aabb.Y0, aabb.Z0, aabb.X1, aabb.Y1, aabb.Z1)
+}
 
-	if x < 0.0 {
-		minX += x
+func (aabb AABB) Expand(xa, ya, za float64) AABB {
+	x0 := aabb.X0
+	y0 := aabb.Y0
+	z0 := aabb.Z0
+	x1 := aabb.X1
+	y1 := aabb.Y1
+	z1 := aabb.Z1
+
+	if xa < 0.0 {
+		x0 += xa
+	}
+	if xa > 0.0 {
+		x1 += xa
+	}
+
+	if ya < 0.0 {
+		y0 += ya
+	}
+	if ya > 0.0 {
+		y1 += ya
+	}
+
+	if za < 0.0 {
+		z0 += za
+	}
+	if za > 0.0 {
+		z1 += za
+	}
+
+	return NewAABB(x0, y0, z0, x1, y1, z1)
+}
+
+func (aabb AABB) Grow(xa, ya, za float64) AABB {
+	return NewAABB(
+		aabb.X0-xa, aabb.Y0-ya, aabb.Z0-za,
+		aabb.X1+xa, aabb.Y1+ya, aabb.Z1+za,
+	)
+}
+
+func (aabb AABB) ClipXCollide(c AABB, xa float64) float64 {
+	if !(c.Y1 <= aabb.Y0) && !(c.Y0 >= aabb.Y1) {
+		if !(c.Z1 <= aabb.Z0) && !(c.Z0 >= aabb.Z1) {
+			max := 0.0
+			if xa > 0.0 && c.X1 <= aabb.X0 {
+				max = aabb.X0 - c.X1 - aabb.epsilon
+				if max < xa {
+					xa = max
+				}
+			}
+
+			if xa < 0.0 && c.X0 >= aabb.X1 {
+				max = aabb.X1 - c.X0 + aabb.epsilon
+				if max > xa {
+					xa = max
+				}
+			}
+
+			return xa
+		} else {
+			return xa
+		}
 	} else {
-		maxX += x
+		return xa
 	}
+}
 
-	if y < 0.0 {
-		minY += y
+func (aabb AABB) ClipYCollide(c AABB, ya float64) float64 {
+	if !(c.X1 <= aabb.X0) && !(c.X0 >= aabb.X1) {
+		if !(c.Z1 <= aabb.Z0) && !(c.Z0 >= aabb.Z1) {
+			max := 0.0
+			if ya > 0.0 && c.Y1 <= aabb.Y0 {
+				max = aabb.Y0 - c.Y1 - aabb.epsilon
+				if max < ya {
+					ya = max
+				}
+			}
+
+			if ya < 0.0 && c.Y0 >= aabb.Y1 {
+				max = aabb.Y1 - c.Y0 + aabb.epsilon
+				if max > ya {
+					ya = max
+				}
+			}
+
+			return ya
+		} else {
+			return ya
+		}
 	} else {
-		maxY += y
+		return ya
 	}
+}
 
-	if z < 0.0 {
-		minZ += z
+func (aabb AABB) ClipZCollide(c AABB, za float64) float64 {
+	if !(c.X1 <= aabb.X0) && !(c.X0 >= aabb.X1) {
+		if !(c.Y1 <= aabb.Y0) && !(c.Y0 >= aabb.Y1) {
+			max := 0.0
+			if za > 0.0 && c.Z1 <= aabb.Z0 {
+				max = aabb.Z0 - c.Z1 - aabb.epsilon
+				if max < za {
+					za = max
+				}
+			}
+
+			if za < 0.0 && c.Z0 >= aabb.Z1 {
+				max = aabb.Z1 - c.Z0 + aabb.epsilon
+				if max > za {
+					za = max
+				}
+			}
+
+			return za
+		} else {
+			return za
+		}
 	} else {
-		maxZ += z
+		return za
 	}
-
-	return NewAABB(minX, minY, minZ, maxX, maxY, maxZ)
 }
 
-func (aabb AABB) ClipXCollide(otherBoundingBox AABB, x float64) float64 {
-	if otherBoundingBox.MaxY <= aabb.MinY || otherBoundingBox.MinY >= aabb.MaxY {
-		return x
-	}
-
-	if otherBoundingBox.MaxZ <= aabb.MinZ || otherBoundingBox.MinZ >= aabb.MaxZ {
-		return x
-	}
-
-	if x > 0.0 && otherBoundingBox.MaxX <= aabb.MinX {
-		max := aabb.MinX - otherBoundingBox.MaxX - aabb.epsilon
-		if max < x {
-			x = max
+func (aabb AABB) Intersects(c AABB) bool {
+	if !(c.X1 <= aabb.X0) && !(c.X0 >= aabb.X1) {
+		if !(c.Y1 <= aabb.Y0) && !(c.Y0 >= aabb.Y1) {
+			return !(c.Z1 <= aabb.Z0) && !(c.Z0 >= aabb.Z1)
+		} else {
+			return false
 		}
+	} else {
+		return false
 	}
-
-	if x < 0.0 && otherBoundingBox.MinX >= aabb.MaxX {
-		max := aabb.MaxX - otherBoundingBox.MinX + aabb.epsilon
-		if max > x {
-			x = max
-		}
-	}
-
-	return x
 }
 
-func (aabb AABB) ClipYCollide(otherBoundingBox AABB, y float64) float64 {
-	if otherBoundingBox.MaxX <= aabb.MinX || otherBoundingBox.MinX >= aabb.MaxX {
-		return y
-	}
-
-	if otherBoundingBox.MaxZ <= aabb.MinZ || otherBoundingBox.MinZ >= aabb.MaxZ {
-		return y
-	}
-
-	if y > 0.0 && otherBoundingBox.MaxY <= aabb.MinY {
-		max := aabb.MinY - otherBoundingBox.MaxY - aabb.epsilon
-		if max < y {
-			y = max
-		}
-	}
-
-	if y < 0.0 && otherBoundingBox.MinY >= aabb.MaxY {
-		max := aabb.MaxY - otherBoundingBox.MinY + aabb.epsilon
-		if max > y {
-			y = max
-		}
-	}
-
-	return y
-}
-
-func (aabb AABB) ClipZCollide(otherBoundingBox AABB, z float64) float64 {
-	if otherBoundingBox.MaxX <= aabb.MinX || otherBoundingBox.MinX >= aabb.MaxX {
-		return z
-	}
-
-	if otherBoundingBox.MaxY <= aabb.MinY || otherBoundingBox.MinY >= aabb.MaxY {
-		return z
-	}
-
-	if z > 0.0 && otherBoundingBox.MaxZ <= aabb.MinZ {
-		max := aabb.MinZ - otherBoundingBox.MaxZ - aabb.epsilon
-		if max < z {
-			z = max
-		}
-	}
-
-	if z < 0.0 && otherBoundingBox.MinZ >= aabb.MaxZ {
-		max := aabb.MaxZ - otherBoundingBox.MinZ + aabb.epsilon
-		if max > z {
-			z = max
-		}
-	}
-
-	return z
-}
-
-func (aabb AABB) Move(x, y, z float64) AABB {
-	aabb.MinX += x
-	aabb.MinY += y
-	aabb.MinZ += z
-	aabb.MaxX += x
-	aabb.MaxY += y
-	aabb.MaxZ += z
+func (aabb AABB) Move(xa, ya, za float64) AABB {
+	aabb.X0 += xa
+	aabb.Y0 += ya
+	aabb.Z0 += za
+	aabb.X1 += xa
+	aabb.Y1 += ya
+	aabb.Z1 += za
 
 	return aabb
+}
+
+func (aabb AABB) Offset(x, y, z float64) AABB {
+	return NewAABB(
+		aabb.X0+x, aabb.Y0+y, aabb.Z0+z,
+		aabb.X1+x, aabb.Y1+y, aabb.Z1+z,
+	)
 }

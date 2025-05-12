@@ -149,9 +149,9 @@ func (player *Player) Move(x, y, z float64) {
 		player.MotionZ = 0.0
 	}
 
-	player.X = (player.BoundingBox.MinX + player.BoundingBox.MaxX) / 2.0
-	player.Y = player.BoundingBox.MinY + 1.62
-	player.Z = (player.BoundingBox.MinZ + player.BoundingBox.MaxZ) / 2.0
+	player.X = (player.BoundingBox.X0 + player.BoundingBox.X1) / 2.0
+	player.Y = player.BoundingBox.Y0 + 1.62
+	player.Z = (player.BoundingBox.Z0 + player.BoundingBox.Z1) / 2.0
 }
 
 func (player *Player) moveRelative(x, z, speed float64) {

@@ -1,134 +1,178 @@
 package game
 
 var (
-	TileDirt  = NewTile(0)
-	TileStone = NewTile(1)
+	TileStone = NewTile(0)
+	TileGrass = NewTile(1)
 )
 
 type Tile struct {
-	textureId int
+	tex int
 }
 
-func NewTile(textureId int) *Tile {
+func NewTile(tex int) *Tile {
 	tile := new(Tile)
 
-	tile.textureId = textureId
+	tile.tex = tex
 
 	return tile
 }
 
 func (tile *Tile) Render(tessellator *Tessellator, level *Level, layer, x, y, z int) {
 	var (
-		minU float32 = float32(tile.textureId) / 16.0
-		maxU float32 = minU + 0.0625
-		minV float32 = 0.0
-		maxV float32 = minV + 0.0625
+		u0 float32 = float32(tile.tex) / 16.0
+		u1 float32 = u0 + 0.0624375
+		v0 float32 = 0.0
+		v1 float32 = v0 + 0.0624375
 
-		shadeX float32 = 0.6
-		shadeY float32 = 1.0
-		shadeZ float32 = 0.8
+		c1 float32 = 1.0
+		c2 float32 = 0.8
+		c3 float32 = 0.6
 
-		minX float32 = float32(x) + 0.0
-		maxX float32 = float32(x) + 1.0
-		minY float32 = float32(y) + 0.0
-		maxY float32 = float32(y) + 1.0
-		minZ float32 = float32(z) + 0.0
-		maxZ float32 = float32(z) + 1.0
+		x0 float32 = float32(x) + 0.0
+		x1 float32 = float32(x) + 1.0
+		y0 float32 = float32(y) + 0.0
+		y1 float32 = float32(y) + 1.0
+		z0 float32 = float32(z) + 0.0
+		z1 float32 = float32(z) + 1.0
+
+		br float32
 	)
 
 	if !level.IsSolidTile(x, y-1, z) {
-		brightness := level.GetBrightness(x, y-1, z) * float32(shadeY)
-
-		if (layer == 1) != (brightness == float32(shadeY)) {
-			tessellator.Color(brightness, brightness, brightness)
-			tessellator.Texture(minU, maxV)
-			tessellator.Vertex(minX, minY, maxZ)
-			tessellator.Texture(minU, minV)
-			tessellator.Vertex(minX, minY, minZ)
-			tessellator.Texture(maxU, minV)
-			tessellator.Vertex(maxX, minY, minZ)
-			tessellator.Texture(maxU, maxV)
-			tessellator.Vertex(maxX, minY, maxZ)
+		br = level.GetBrightness(x, y-1, z) * c1
+		if (br == c1) != (layer == 1) {
+			tessellator.Color(br, br, br)
+			tessellator.Tex(u0, v1)
+			tessellator.Vertex(x0, y0, z1)
+			tessellator.Tex(u0, v0)
+			tessellator.Vertex(x0, y0, z0)
+			tessellator.Tex(u1, v0)
+			tessellator.Vertex(x1, y0, z0)
+			tessellator.Tex(u1, v1)
+			tessellator.Vertex(x1, y0, z1)
 		}
 	}
 
 	if !level.IsSolidTile(x, y+1, z) {
-		brightness := level.GetBrightness(x, y+1, z) * shadeY
-
-		if (layer == 1) != (brightness == shadeY) {
-			tessellator.Color(brightness, brightness, brightness)
-			tessellator.Texture(maxU, maxV)
-			tessellator.Vertex(maxX, maxY, maxZ)
-			tessellator.Texture(maxU, minV)
-			tessellator.Vertex(maxX, maxY, minZ)
-			tessellator.Texture(minU, minV)
-			tessellator.Vertex(minX, maxY, minZ)
-			tessellator.Texture(minU, maxV)
-			tessellator.Vertex(minX, maxY, maxZ)
+		br = level.GetBrightness(x, y, z) * c1
+		if (br == c1) != (layer == 1) {
+			tessellator.Color(br, br, br)
+			tessellator.Tex(u1, v1)
+			tessellator.Vertex(x1, y1, z1)
+			tessellator.Tex(u1, v0)
+			tessellator.Vertex(x1, y1, z0)
+			tessellator.Tex(u0, v0)
+			tessellator.Vertex(x0, y1, z0)
+			tessellator.Tex(u0, v1)
+			tessellator.Vertex(x0, y1, z1)
 		}
 	}
 
 	if !level.IsSolidTile(x, y, z-1) {
-		brightness := level.GetBrightness(x, y, z-1) * shadeZ
-
-		if (layer == 1) != (brightness == shadeZ) {
-			tessellator.Color(brightness, brightness, brightness)
-			tessellator.Texture(maxU, minV)
-			tessellator.Vertex(minX, maxY, minZ)
-			tessellator.Texture(minU, minV)
-			tessellator.Vertex(maxX, maxY, minZ)
-			tessellator.Texture(minU, maxV)
-			tessellator.Vertex(maxX, minY, minZ)
-			tessellator.Texture(maxU, maxV)
-			tessellator.Vertex(minX, minY, minZ)
+		br = level.GetBrightness(x, y, z-1) * c2
+		if (br == c2) != (layer == 1) {
+			tessellator.Color(br, br, br)
+			tessellator.Tex(u1, v0)
+			tessellator.Vertex(x0, y1, z0)
+			tessellator.Tex(u0, v0)
+			tessellator.Vertex(x1, y1, z0)
+			tessellator.Tex(u0, v1)
+			tessellator.Vertex(x1, y0, z0)
+			tessellator.Tex(u1, v1)
+			tessellator.Vertex(x0, y0, z0)
 		}
 	}
 
 	if !level.IsSolidTile(x, y, z+1) {
-		brightness := level.GetBrightness(x, y, z+1) * shadeZ
-
-		if (layer == 1) != (brightness == shadeZ) {
-			tessellator.Color(brightness, brightness, brightness)
-			tessellator.Texture(minU, minV)
-			tessellator.Vertex(minX, maxY, maxZ)
-			tessellator.Texture(minU, maxV)
-			tessellator.Vertex(minX, minY, maxZ)
-			tessellator.Texture(maxU, maxV)
-			tessellator.Vertex(maxX, minY, maxZ)
-			tessellator.Texture(maxU, minV)
-			tessellator.Vertex(maxX, maxY, maxZ)
+		br = level.GetBrightness(x, y, z+1) * c2
+		if (br == c2) != (layer == 1) {
+			tessellator.Color(br, br, br)
+			tessellator.Tex(u0, v0)
+			tessellator.Vertex(x0, y1, z1)
+			tessellator.Tex(u0, v1)
+			tessellator.Vertex(x0, y0, z1)
+			tessellator.Tex(u1, v1)
+			tessellator.Vertex(x1, y0, z1)
+			tessellator.Tex(u1, v0)
+			tessellator.Vertex(x1, y1, z1)
 		}
 	}
 
 	if !level.IsSolidTile(x-1, y, z) {
-		brightness := level.GetBrightness(x-1, y, z) * shadeX
-
-		if (layer == 1) != (brightness == shadeX) {
-			tessellator.Color(brightness, brightness, brightness)
-			tessellator.Texture(maxU, minV)
-			tessellator.Vertex(minX, maxY, maxZ)
-			tessellator.Texture(minU, minV)
-			tessellator.Vertex(minX, maxY, minZ)
-			tessellator.Texture(minU, maxV)
-			tessellator.Vertex(minX, minY, minZ)
-			tessellator.Texture(maxU, maxV)
-			tessellator.Vertex(minX, minY, maxZ)
+		br = level.GetBrightness(x-1, y, z) * c3
+		if (br == c3) != (layer == 1) {
+			tessellator.Color(br, br, br)
+			tessellator.Tex(u1, v0)
+			tessellator.Vertex(x0, y1, z1)
+			tessellator.Tex(u0, v0)
+			tessellator.Vertex(x0, y1, z0)
+			tessellator.Tex(u0, v1)
+			tessellator.Vertex(x0, y0, z0)
+			tessellator.Tex(u1, v1)
+			tessellator.Vertex(x0, y0, z1)
 		}
 	}
 
 	if !level.IsSolidTile(x+1, y, z) {
-		brightness := level.GetBrightness(x+1, y, z) * shadeX
-
-		if (layer == 1) != (brightness == shadeX) {
-			tessellator.Color(brightness, brightness, brightness)
-			tessellator.Texture(minU, maxV)
-			tessellator.Vertex(maxX, minY, maxZ)
-			tessellator.Texture(maxU, maxV)
-			tessellator.Vertex(maxX, minY, minZ)
-			tessellator.Texture(maxU, minV)
-			tessellator.Vertex(maxX, maxY, minZ)
-			tessellator.Texture(minU, minV)
-			tessellator.Vertex(maxX, maxY, maxZ)
+		br = level.GetBrightness(x+1, y, z) * c3
+		if (br == c3) != (layer == 1) {
+			tessellator.Color(br, br, br)
+			tessellator.Tex(u0, v1)
+			tessellator.Vertex(x1, y0, z1)
+			tessellator.Tex(u1, v1)
+			tessellator.Vertex(x1, y0, z0)
+			tessellator.Tex(u1, v0)
+			tessellator.Vertex(x1, y1, z0)
+			tessellator.Tex(u0, v0)
+			tessellator.Vertex(x1, y1, z1)
 		}
+	}
+}
+
+func (tile *Tile) RenderFace(tessellator *Tessellator, x, y, z, face int) {
+	var (
+		x0 float32 = float32(x)
+		x1 float32 = float32(x) + 1.0
+		y0 float32 = float32(y)
+		y1 float32 = float32(y) + 1.0
+		z0 float32 = float32(z)
+		z1 float32 = float32(z) + 1.0
+	)
+
+	if face == 0 {
+		tessellator.Vertex(x0, y0, z1)
+		tessellator.Vertex(x0, y0, z0)
+		tessellator.Vertex(x1, y0, z0)
+		tessellator.Vertex(x1, y0, z1)
+	}
+	if face == 1 {
+		tessellator.Vertex(x1, y1, z1)
+		tessellator.Vertex(x1, y1, z0)
+		tessellator.Vertex(x0, y1, z0)
+		tessellator.Vertex(x0, y1, z1)
+	}
+	if face == 2 {
+		tessellator.Vertex(x0, y1, z0)
+		tessellator.Vertex(x1, y1, z0)
+		tessellator.Vertex(x1, y0, z0)
+		tessellator.Vertex(x0, y0, z0)
+	}
+	if face == 3 {
+		tessellator.Vertex(x0, y1, z1)
+		tessellator.Vertex(x0, y0, z1)
+		tessellator.Vertex(x1, y0, z1)
+		tessellator.Vertex(x1, y1, z1)
+	}
+	if face == 4 {
+		tessellator.Vertex(x0, y1, z1)
+		tessellator.Vertex(x0, y1, z0)
+		tessellator.Vertex(x0, y0, z0)
+		tessellator.Vertex(x0, y0, z1)
+	}
+	if face == 5 {
+		tessellator.Vertex(x1, y0, z1)
+		tessellator.Vertex(x1, y0, z0)
+		tessellator.Vertex(x1, y1, z0)
+		tessellator.Vertex(x1, y1, z1)
 	}
 }

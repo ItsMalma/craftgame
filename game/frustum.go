@@ -2,8 +2,7 @@ package game
 
 import (
 	"craftgame/pkg/gl"
-
-	"github.com/chewxy/math32"
+	"math"
 )
 
 type FrustumSide int
@@ -27,10 +26,11 @@ const (
 )
 
 type Frustum struct {
-	values [6][4]float32
+	matrix [6][4]float32
 
-	modelView  [16]float32
-	projection [16]float32
+	projectionBuffer [16]float32
+	modelViewBuffer  [16]float32
+	clippingBuffer   [16]float32
 }
 
 var frustumInstance *Frustum = NewFrustum()
@@ -38,10 +38,11 @@ var frustumInstance *Frustum = NewFrustum()
 func NewFrustum() *Frustum {
 	frustum := new(Frustum)
 
-	frustum.values = [6][4]float32{}
+	frustum.matrix = [6][4]float32{}
 
-	frustum.modelView = [16]float32{}
-	frustum.projection = [16]float32{}
+	frustum.projectionBuffer = [16]float32{}
+	frustum.modelViewBuffer = [16]float32{}
+	frustum.clippingBuffer = [16]float32{}
 
 	return frustum
 }
@@ -52,110 +53,103 @@ func GetFrustum() *Frustum {
 }
 
 func (frustum *Frustum) NormalizePlane(side FrustumSide) {
-	magnitude := math32.Sqrt(
-		frustum.values[side][FrustumA]*frustum.values[side][FrustumA] +
-			frustum.values[side][FrustumB]*frustum.values[side][FrustumB] +
-			frustum.values[side][FrustumC]*frustum.values[side][FrustumC],
-	)
+	magnitude := float32(math.Sqrt(float64(
+		frustum.matrix[side][FrustumA]*frustum.matrix[side][FrustumA] +
+			frustum.matrix[side][FrustumB]*frustum.matrix[side][FrustumB] +
+			frustum.matrix[side][FrustumC]*frustum.matrix[side][FrustumC],
+	)))
 
-	frustum.values[side][FrustumA] /= magnitude
-	frustum.values[side][FrustumB] /= magnitude
-	frustum.values[side][FrustumC] /= magnitude
-	frustum.values[side][FrustumD] /= magnitude
+	frustum.matrix[side][FrustumA] /= magnitude
+	frustum.matrix[side][FrustumB] /= magnitude
+	frustum.matrix[side][FrustumC] /= magnitude
+	frustum.matrix[side][FrustumD] /= magnitude
 }
 
 func (frustum *Frustum) CalculateFrustum() {
-	projection := [16]float32{}
-	modelView := [16]float32{}
-	clipping := [16]float32{}
+	gl.GetFloatv(gl.ProjectionMatrix, &frustum.projectionBuffer[0])
+	gl.GetFloatv(gl.ModelViewMatrix, &frustum.modelViewBuffer[0])
 
-	gl.GetFloatv(gl.ProjectionMatrix, &frustum.projection[0])
-	projection = frustum.projection
+	frustum.clippingBuffer[0] = frustum.modelViewBuffer[0]*frustum.projectionBuffer[0] + frustum.modelViewBuffer[1]*frustum.projectionBuffer[4] + frustum.modelViewBuffer[2]*frustum.projectionBuffer[8] + frustum.modelViewBuffer[3]*frustum.projectionBuffer[12]
+	frustum.clippingBuffer[1] = frustum.modelViewBuffer[0]*frustum.projectionBuffer[1] + frustum.modelViewBuffer[1]*frustum.projectionBuffer[5] + frustum.modelViewBuffer[2]*frustum.projectionBuffer[9] + frustum.modelViewBuffer[3]*frustum.projectionBuffer[13]
+	frustum.clippingBuffer[2] = frustum.modelViewBuffer[0]*frustum.projectionBuffer[2] + frustum.modelViewBuffer[1]*frustum.projectionBuffer[6] + frustum.modelViewBuffer[2]*frustum.projectionBuffer[10] + frustum.modelViewBuffer[3]*frustum.projectionBuffer[14]
+	frustum.clippingBuffer[3] = frustum.modelViewBuffer[0]*frustum.projectionBuffer[3] + frustum.modelViewBuffer[1]*frustum.projectionBuffer[7] + frustum.modelViewBuffer[2]*frustum.projectionBuffer[11] + frustum.modelViewBuffer[3]*frustum.projectionBuffer[15]
 
-	gl.GetFloatv(gl.ModelViewMatrix, &frustum.modelView[0])
-	modelView = frustum.modelView
+	frustum.clippingBuffer[4] = frustum.modelViewBuffer[4]*frustum.projectionBuffer[0] + frustum.modelViewBuffer[5]*frustum.projectionBuffer[4] + frustum.modelViewBuffer[6]*frustum.projectionBuffer[8] + frustum.modelViewBuffer[7]*frustum.projectionBuffer[12]
+	frustum.clippingBuffer[5] = frustum.modelViewBuffer[4]*frustum.projectionBuffer[1] + frustum.modelViewBuffer[5]*frustum.projectionBuffer[5] + frustum.modelViewBuffer[6]*frustum.projectionBuffer[9] + frustum.modelViewBuffer[7]*frustum.projectionBuffer[13]
+	frustum.clippingBuffer[6] = frustum.modelViewBuffer[4]*frustum.projectionBuffer[2] + frustum.modelViewBuffer[5]*frustum.projectionBuffer[6] + frustum.modelViewBuffer[6]*frustum.projectionBuffer[10] + frustum.modelViewBuffer[7]*frustum.projectionBuffer[14]
+	frustum.clippingBuffer[7] = frustum.modelViewBuffer[4]*frustum.projectionBuffer[3] + frustum.modelViewBuffer[5]*frustum.projectionBuffer[7] + frustum.modelViewBuffer[6]*frustum.projectionBuffer[11] + frustum.modelViewBuffer[7]*frustum.projectionBuffer[15]
 
-	clipping[0] = modelView[0]*projection[0] + modelView[1]*projection[4] + modelView[2]*projection[8] + modelView[3]*projection[12]
-	clipping[1] = modelView[0]*projection[1] + modelView[1]*projection[5] + modelView[2]*projection[9] + modelView[3]*projection[13]
-	clipping[2] = modelView[0]*projection[2] + modelView[1]*projection[6] + modelView[2]*projection[10] + modelView[3]*projection[14]
-	clipping[3] = modelView[0]*projection[3] + modelView[1]*projection[7] + modelView[2]*projection[11] + modelView[3]*projection[15]
+	frustum.clippingBuffer[8] = frustum.modelViewBuffer[8]*frustum.projectionBuffer[0] + frustum.modelViewBuffer[9]*frustum.projectionBuffer[4] + frustum.modelViewBuffer[10]*frustum.projectionBuffer[8] + frustum.modelViewBuffer[11]*frustum.projectionBuffer[12]
+	frustum.clippingBuffer[9] = frustum.modelViewBuffer[8]*frustum.projectionBuffer[1] + frustum.modelViewBuffer[9]*frustum.projectionBuffer[5] + frustum.modelViewBuffer[10]*frustum.projectionBuffer[9] + frustum.modelViewBuffer[11]*frustum.projectionBuffer[13]
+	frustum.clippingBuffer[10] = frustum.modelViewBuffer[8]*frustum.projectionBuffer[2] + frustum.modelViewBuffer[9]*frustum.projectionBuffer[6] + frustum.modelViewBuffer[10]*frustum.projectionBuffer[10] + frustum.modelViewBuffer[11]*frustum.projectionBuffer[14]
+	frustum.clippingBuffer[11] = frustum.modelViewBuffer[8]*frustum.projectionBuffer[3] + frustum.modelViewBuffer[9]*frustum.projectionBuffer[7] + frustum.modelViewBuffer[10]*frustum.projectionBuffer[11] + frustum.modelViewBuffer[11]*frustum.projectionBuffer[15]
 
-	clipping[4] = modelView[4]*projection[0] + modelView[5]*projection[4] + modelView[6]*projection[8] + modelView[7]*projection[12]
-	clipping[5] = modelView[4]*projection[1] + modelView[5]*projection[5] + modelView[6]*projection[9] + modelView[7]*projection[13]
-	clipping[6] = modelView[4]*projection[2] + modelView[5]*projection[6] + modelView[6]*projection[10] + modelView[7]*projection[14]
-	clipping[7] = modelView[4]*projection[3] + modelView[5]*projection[7] + modelView[6]*projection[11] + modelView[7]*projection[15]
+	frustum.clippingBuffer[12] = frustum.modelViewBuffer[12]*frustum.projectionBuffer[0] + frustum.modelViewBuffer[13]*frustum.projectionBuffer[4] + frustum.modelViewBuffer[14]*frustum.projectionBuffer[8] + frustum.modelViewBuffer[15]*frustum.projectionBuffer[12]
+	frustum.clippingBuffer[13] = frustum.modelViewBuffer[12]*frustum.projectionBuffer[1] + frustum.modelViewBuffer[13]*frustum.projectionBuffer[5] + frustum.modelViewBuffer[14]*frustum.projectionBuffer[9] + frustum.modelViewBuffer[15]*frustum.projectionBuffer[13]
+	frustum.clippingBuffer[14] = frustum.modelViewBuffer[12]*frustum.projectionBuffer[2] + frustum.modelViewBuffer[13]*frustum.projectionBuffer[6] + frustum.modelViewBuffer[14]*frustum.projectionBuffer[10] + frustum.modelViewBuffer[15]*frustum.projectionBuffer[14]
+	frustum.clippingBuffer[15] = frustum.modelViewBuffer[12]*frustum.projectionBuffer[3] + frustum.modelViewBuffer[13]*frustum.projectionBuffer[7] + frustum.modelViewBuffer[14]*frustum.projectionBuffer[11] + frustum.modelViewBuffer[15]*frustum.projectionBuffer[15]
 
-	clipping[8] = modelView[8]*projection[0] + modelView[9]*projection[4] + modelView[10]*projection[8] + modelView[11]*projection[12]
-	clipping[9] = modelView[8]*projection[1] + modelView[9]*projection[5] + modelView[10]*projection[9] + modelView[11]*projection[13]
-	clipping[10] = modelView[8]*projection[2] + modelView[9]*projection[6] + modelView[10]*projection[10] + modelView[11]*projection[14]
-	clipping[11] = modelView[8]*projection[3] + modelView[9]*projection[7] + modelView[10]*projection[11] + modelView[11]*projection[15]
-
-	clipping[12] = modelView[12]*projection[0] + modelView[13]*projection[4] + modelView[14]*projection[8] + modelView[15]*projection[12]
-	clipping[13] = modelView[12]*projection[1] + modelView[13]*projection[5] + modelView[14]*projection[9] + modelView[15]*projection[13]
-	clipping[14] = modelView[12]*projection[2] + modelView[13]*projection[6] + modelView[14]*projection[10] + modelView[15]*projection[14]
-	clipping[15] = modelView[12]*projection[3] + modelView[13]*projection[7] + modelView[14]*projection[11] + modelView[15]*projection[15]
-
-	frustum.values[FrustumRight][FrustumA] = clipping[3] - clipping[0]
-	frustum.values[FrustumRight][FrustumB] = clipping[7] - clipping[4]
-	frustum.values[FrustumRight][FrustumC] = clipping[11] - clipping[8]
-	frustum.values[FrustumRight][FrustumD] = clipping[15] - clipping[12]
+	frustum.matrix[FrustumRight][FrustumA] = frustum.clippingBuffer[3] - frustum.clippingBuffer[0]
+	frustum.matrix[FrustumRight][FrustumB] = frustum.clippingBuffer[7] - frustum.clippingBuffer[4]
+	frustum.matrix[FrustumRight][FrustumC] = frustum.clippingBuffer[11] - frustum.clippingBuffer[8]
+	frustum.matrix[FrustumRight][FrustumD] = frustum.clippingBuffer[15] - frustum.clippingBuffer[12]
 	frustum.NormalizePlane(FrustumRight)
 
-	frustum.values[FrustumLeft][FrustumA] = clipping[3] + clipping[0]
-	frustum.values[FrustumLeft][FrustumB] = clipping[7] + clipping[4]
-	frustum.values[FrustumLeft][FrustumC] = clipping[11] + clipping[8]
-	frustum.values[FrustumLeft][FrustumD] = clipping[15] + clipping[12]
+	frustum.matrix[FrustumLeft][FrustumA] = frustum.clippingBuffer[3] + frustum.clippingBuffer[0]
+	frustum.matrix[FrustumLeft][FrustumB] = frustum.clippingBuffer[7] + frustum.clippingBuffer[4]
+	frustum.matrix[FrustumLeft][FrustumC] = frustum.clippingBuffer[11] + frustum.clippingBuffer[8]
+	frustum.matrix[FrustumLeft][FrustumD] = frustum.clippingBuffer[15] + frustum.clippingBuffer[12]
 	frustum.NormalizePlane(FrustumLeft)
 
-	frustum.values[FrustumBottom][FrustumA] = clipping[3] + clipping[1]
-	frustum.values[FrustumBottom][FrustumB] = clipping[7] + clipping[5]
-	frustum.values[FrustumBottom][FrustumC] = clipping[11] + clipping[9]
-	frustum.values[FrustumBottom][FrustumD] = clipping[15] + clipping[13]
+	frustum.matrix[FrustumBottom][FrustumA] = frustum.clippingBuffer[3] + frustum.clippingBuffer[1]
+	frustum.matrix[FrustumBottom][FrustumB] = frustum.clippingBuffer[7] + frustum.clippingBuffer[5]
+	frustum.matrix[FrustumBottom][FrustumC] = frustum.clippingBuffer[11] + frustum.clippingBuffer[9]
+	frustum.matrix[FrustumBottom][FrustumD] = frustum.clippingBuffer[15] + frustum.clippingBuffer[13]
 	frustum.NormalizePlane(FrustumBottom)
 
-	frustum.values[FrustumTop][FrustumA] = clipping[3] - clipping[1]
-	frustum.values[FrustumTop][FrustumB] = clipping[7] - clipping[5]
-	frustum.values[FrustumTop][FrustumC] = clipping[11] - clipping[9]
-	frustum.values[FrustumTop][FrustumD] = clipping[15] - clipping[13]
+	frustum.matrix[FrustumTop][FrustumA] = frustum.clippingBuffer[3] - frustum.clippingBuffer[1]
+	frustum.matrix[FrustumTop][FrustumB] = frustum.clippingBuffer[7] - frustum.clippingBuffer[5]
+	frustum.matrix[FrustumTop][FrustumC] = frustum.clippingBuffer[11] - frustum.clippingBuffer[9]
+	frustum.matrix[FrustumTop][FrustumD] = frustum.clippingBuffer[15] - frustum.clippingBuffer[13]
 	frustum.NormalizePlane(FrustumTop)
 
-	frustum.values[FrustumBack][FrustumA] = clipping[3] - clipping[2]
-	frustum.values[FrustumBack][FrustumB] = clipping[7] - clipping[6]
-	frustum.values[FrustumBack][FrustumC] = clipping[11] - clipping[10]
-	frustum.values[FrustumBack][FrustumD] = clipping[15] - clipping[14]
+	frustum.matrix[FrustumBack][FrustumA] = frustum.clippingBuffer[3] - frustum.clippingBuffer[2]
+	frustum.matrix[FrustumBack][FrustumB] = frustum.clippingBuffer[7] - frustum.clippingBuffer[6]
+	frustum.matrix[FrustumBack][FrustumC] = frustum.clippingBuffer[11] - frustum.clippingBuffer[10]
+	frustum.matrix[FrustumBack][FrustumD] = frustum.clippingBuffer[15] - frustum.clippingBuffer[14]
 	frustum.NormalizePlane(FrustumBack)
 
-	frustum.values[FrustumFront][FrustumA] = clipping[3] + clipping[2]
-	frustum.values[FrustumFront][FrustumB] = clipping[7] + clipping[6]
-	frustum.values[FrustumFront][FrustumC] = clipping[11] + clipping[10]
-	frustum.values[FrustumFront][FrustumD] = clipping[15] + clipping[14]
+	frustum.matrix[FrustumFront][FrustumA] = frustum.clippingBuffer[3] + frustum.clippingBuffer[2]
+	frustum.matrix[FrustumFront][FrustumB] = frustum.clippingBuffer[7] + frustum.clippingBuffer[6]
+	frustum.matrix[FrustumFront][FrustumC] = frustum.clippingBuffer[11] + frustum.clippingBuffer[10]
+	frustum.matrix[FrustumFront][FrustumD] = frustum.clippingBuffer[15] + frustum.clippingBuffer[14]
 	frustum.NormalizePlane(FrustumFront)
 }
 
-func (frustum *Frustum) CubeInFrustum(minX, minY, minZ, maxX, maxY, maxZ float32) bool {
+func (frustum *Frustum) CubeFullyInFrustum(x1, y1, z1, x2, y2, z2 float32) bool {
 	for i := range 6 {
-		if frustum.values[i][FrustumA]*minX+frustum.values[i][FrustumB]*minY+frustum.values[i][FrustumC]*minZ+frustum.values[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*x1+frustum.matrix[i][FrustumB]*y1+frustum.matrix[i][FrustumC]*z1+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.values[i][FrustumA]*maxX+frustum.values[i][FrustumB]*minY+frustum.values[i][FrustumC]*minZ+frustum.values[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*x2+frustum.matrix[i][FrustumB]*y1+frustum.matrix[i][FrustumC]*z1+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.values[i][FrustumA]*minX+frustum.values[i][FrustumB]*maxY+frustum.values[i][FrustumC]*minZ+frustum.values[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*x1+frustum.matrix[i][FrustumB]*y2+frustum.matrix[i][FrustumC]*z1+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.values[i][FrustumA]*maxX+frustum.values[i][FrustumB]*maxY+frustum.values[i][FrustumC]*minZ+frustum.values[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*x2+frustum.matrix[i][FrustumB]*y2+frustum.matrix[i][FrustumC]*z1+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.values[i][FrustumA]*minX+frustum.values[i][FrustumB]*minY+frustum.values[i][FrustumC]*maxZ+frustum.values[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*x1+frustum.matrix[i][FrustumB]*y1+frustum.matrix[i][FrustumC]*z2+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.values[i][FrustumA]*maxX+frustum.values[i][FrustumB]*minY+frustum.values[i][FrustumC]*maxZ+frustum.values[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*x2+frustum.matrix[i][FrustumB]*y1+frustum.matrix[i][FrustumC]*z2+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.values[i][FrustumA]*minX+frustum.values[i][FrustumB]*maxY+frustum.values[i][FrustumC]*maxZ+frustum.values[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*x1+frustum.matrix[i][FrustumB]*y2+frustum.matrix[i][FrustumC]*z2+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
-		if frustum.values[i][FrustumA]*maxX+frustum.values[i][FrustumB]*maxY+frustum.values[i][FrustumC]*maxZ+frustum.values[i][FrustumD] > 0 {
+		if frustum.matrix[i][FrustumA]*x2+frustum.matrix[i][FrustumB]*y2+frustum.matrix[i][FrustumC]*z2+frustum.matrix[i][FrustumD] > 0 {
 			continue
 		}
 
@@ -165,13 +159,30 @@ func (frustum *Frustum) CubeInFrustum(minX, minY, minZ, maxX, maxY, maxZ float32
 	return true
 }
 
+func (frustum *Frustum) CubeInFrustum(x1, y1, z1, x2, y2, z2 float32) bool {
+	for i := range 6 {
+		if !(frustum.matrix[i][0]*x1+frustum.matrix[i][1]*y1+frustum.matrix[i][2]*z1+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*x2+frustum.matrix[i][1]*y1+frustum.matrix[i][2]*z1+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*x1+frustum.matrix[i][1]*y2+frustum.matrix[i][2]*z1+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*x2+frustum.matrix[i][1]*y2+frustum.matrix[i][2]*z1+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*x1+frustum.matrix[i][1]*y1+frustum.matrix[i][2]*z2+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*x2+frustum.matrix[i][1]*y1+frustum.matrix[i][2]*z2+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*x1+frustum.matrix[i][1]*y2+frustum.matrix[i][2]*z2+frustum.matrix[i][3] > 0.0) &&
+			!(frustum.matrix[i][0]*x2+frustum.matrix[i][1]*y2+frustum.matrix[i][2]*z2+frustum.matrix[i][3] > 0.0) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (frustum *Frustum) CubeInFrustumAABB(aabb AABB) bool {
 	return frustum.CubeInFrustum(
-		float32(aabb.MinX),
-		float32(aabb.MinY),
-		float32(aabb.MinZ),
-		float32(aabb.MaxX),
-		float32(aabb.MaxY),
-		float32(aabb.MaxZ),
+		float32(aabb.X0),
+		float32(aabb.Y0),
+		float32(aabb.Z0),
+		float32(aabb.X1),
+		float32(aabb.Y1),
+		float32(aabb.Z1),
 	)
 }

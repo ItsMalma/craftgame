@@ -13,7 +13,14 @@ import (
 	"os"
 )
 
+var idMap = map[string]int32{}
+var lastId int32 = math.MinInt32
+
 func LoadTexture(resourceName string, mode int32) (int32, error) {
+	if id, exists := idMap[resourceName]; exists {
+		return id, nil
+	}
+
 	var id int32
 	gl.GenTextures(1, &id)
 
@@ -57,8 +64,6 @@ func LoadTexture(resourceName string, mode int32) (int32, error) {
 
 	return id, nil
 }
-
-var lastId int32 = math.MinInt32
 
 func BindTexture(id int32) {
 	if id != lastId {

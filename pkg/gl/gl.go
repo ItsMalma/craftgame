@@ -19,7 +19,9 @@ const (
 	Fog              = C.GL_FOG
 	FogMode          = C.GL_FOG_MODE
 	Linear           = C.GL_LINEAR
+	Exp              = C.GL_EXP
 	FogStart         = C.GL_FOG_START
+	FogDensity       = C.GL_FOG_DENSITY
 	FogEnd           = C.GL_FOG_END
 	FogColor         = C.GL_FOG_COLOR
 	Nearest          = C.GL_NEAREST
@@ -35,6 +37,12 @@ const (
 	TextureMagFilter = C.GL_TEXTURE_MAG_FILTER
 	RGBA             = C.GL_RGBA
 	UnsignedByte     = C.GL_UNSIGNED_BYTE
+	Blend            = C.GL_BLEND
+	SrcAlpha         = C.GL_SRC_ALPHA
+	CurrentBit       = C.GL_CURRENT_BIT
+	Select           = C.GL_SELECT
+	Viewport         = C.GL_VIEWPORT
+	Render           = C.GL_RENDER
 )
 
 func Enable(cap uint32) {
@@ -121,6 +129,10 @@ func GetFloatv(pname uint32, params *float32) {
 	C.glGetFloatv(C.GLenum(pname), (*C.GLfloat)(unsafe.Pointer(params)))
 }
 
+func GetIntegerv(pname uint32, params *int) {
+	C.glGetIntegerv(C.GLenum(pname), (*C.GLint)(unsafe.Pointer(params)))
+}
+
 func VertexPointer(size int32, typeName uint32, stride int32, data *float32) {
 	C.glVertexPointer(C.GLint(size), C.GLenum(typeName), C.GLsizei(stride), unsafe.Pointer(data))
 }
@@ -151,4 +163,32 @@ func GenTextures(n int32, textures *int32) {
 
 func TexParameteri(target, pname uint32, param int32) {
 	C.glTexParameteri(C.GLenum(target), C.GLenum(pname), C.GLint(param))
+}
+
+func InitNames() {
+	C.glInitNames()
+}
+
+func PushName(name int) {
+	C.glPushName(C.GLuint(name))
+}
+
+func PopName() {
+	C.glPopName()
+}
+
+func Color4f(red, green, blue, alpha float32) {
+	C.glColor4f(C.GLfloat(red), C.GLfloat(green), C.GLfloat(blue), C.GLfloat(alpha))
+}
+
+func BlendFunc(sfactor, dfactor uint32) {
+	C.glBlendFunc(C.GLenum(sfactor), C.GLenum(dfactor))
+}
+
+func SelectBuffer(size int32, buffer *uint32) {
+	C.glSelectBuffer(C.GLsizei(size), (*C.GLuint)(unsafe.Pointer(buffer)))
+}
+
+func RenderMode(mode uint32) int {
+	return int(C.glRenderMode(C.GLenum(mode)))
 }
