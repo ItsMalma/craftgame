@@ -8,10 +8,10 @@
 
 ### 0.0.0b
 
-* Menambahkan mob bob
-    * Bergerak dan melompat secara random
-    * Akan terspawn dengan jumlah 100 saat world terload
-    * Tidak disimpan di `world.dat`
+* Added mob: Bob
+    * Moves and jumps around randomly
+    * 100 of them spawn when the world loads
+    * Not saved in `world.dat`
 
 ### 0.0.0a
 
