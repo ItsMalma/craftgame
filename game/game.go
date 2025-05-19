@@ -25,6 +25,7 @@ type Game struct {
 	world         *world.World
 	worldRenderer *renderer.WorldRenderer
 	player        *entity.Player
+	bobs          []*entity.Bob
 
 	viewportBuffer [16]int32
 	selectBuffer   [2000]uint32
@@ -32,8 +33,7 @@ type Game struct {
 	hasHitResult bool
 	hitResult    renderer.HitResult
 
-	textures    map[string]uint32
-	lastTexture uint32
+	textures map[string]uint32
 }
 
 func NewGame() *Game {
@@ -53,6 +53,8 @@ func NewGame() *Game {
 
 	g.viewportBuffer = [16]int32{}
 	g.selectBuffer = [2000]uint32{}
+
+	g.textures = make(map[string]uint32)
 
 	return g
 }
@@ -99,6 +101,10 @@ func (g *Game) Init() {
 	g.player = entity.NewPlayer(g.world)
 
 	g.window.GrabMouse()
+
+	for range 100 {
+		g.bobs = append(g.bobs, entity.NewBob(g.world, 128.0, 0, 128.0, g.LoadTexture("bob.png", gl.NEAREST)))
+	}
 }
 
 func (g *Game) Destroy() {
@@ -139,6 +145,10 @@ func (g *Game) Run() {
 }
 
 func (g *Game) Tick(input windowing.Input) {
+	for _, bob := range g.bobs {
+		bob.Tick()
+	}
+
 	g.player.Tick(input)
 }
 
@@ -268,6 +278,10 @@ func (g *Game) Render(input windowing.Input) {
 	gl.Disable(gl.FOG)
 
 	g.worldRenderer.Render(g.player, 0)
+
+	for _, bob := range g.bobs {
+		bob.Render(g.timer.A)
+	}
 
 	gl.Enable(gl.FOG)
 

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	_ "image/jpeg"
@@ -18,7 +19,9 @@ func (g *Game) LoadTexture(resourceName string, mode int32) uint32 {
 
 	var texture uint32
 	gl.GenTextures(1, &texture)
-	g.BindTexture(texture)
+	g.textures[resourceName] = texture
+	fmt.Printf("Loading texture %s into %d\n", resourceName, texture)
+	gl.BindTexture(gl.TEXTURE_2D, texture)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mode)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, mode)
 
@@ -43,27 +46,11 @@ func (g *Game) LoadTexture(resourceName string, mode int32) uint32 {
 	for y := resourceBounds.Min.Y; y < resourceBounds.Max.Y; y++ {
 		for x := resourceBounds.Min.X; x < resourceBounds.Max.X; x++ {
 			color := color.NRGBAModel.Convert(resourceImage.At(x, y)).(color.NRGBA)
-
-			alpha := int32(color.A)
-			red := int32(color.R)
-			green := int32(color.G)
-			blue := int32(color.B)
-
-			// Konversi ARGB ke ABGR
-			abgr := (alpha << 24) | (blue << 16) | (green << 8) | red
-
-			pixels[(y-resourceBounds.Min.Y)*w+(x-resourceBounds.Min.X)] = abgr
+			pixels[(y-resourceBounds.Min.Y)*w+(x-resourceBounds.Min.X)] = (int32(color.A) << 24) | (int32(color.B) << 16) | (int32(color.G) << 8) | int32(color.R)
 		}
 	}
 
 	glu.Build2DMipmaps(gl.TEXTURE_2D, gl.RGBA, w, h, gl.RGBA, gl.UNSIGNED_BYTE, &pixels[0])
 
 	return texture
-}
-
-func (g *Game) BindTexture(texture uint32) {
-	if texture != g.lastTexture {
-		gl.BindTexture(gl.TEXTURE_2D, texture)
-		g.lastTexture = texture
-	}
 }
