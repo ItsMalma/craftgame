@@ -1,0 +1,6 @@
+github.com/go-gl-legacy/glu v0.0.0-20150315173544-b54aa06bc77a h1:AlZXEC9Armspjh4Fa8QQtqlLfjMQ9EW7u0uupnrUVm0=
+github.com/go-gl-legacy/glu v0.0.0-20150315173544-b54aa06bc77a/go.mod h1:E6Z9yjsWIEB6ApYzGBOKPfBTLFPeWSUn3c/YZ4ipS9s=
+github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 h1:5BVwOaUSBTlVZowGO6VZGw2H/zl9nrd3eCZfYV+NfQA=
+github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71/go.mod h1:9YTyiznxEY1fVinfM7RvRcjRHbw2xLBJ3AAGIT0I4Nw=
+github.com/veandco/go-sdl2 v0.4.40 h1:fZv6wC3zz1Xt167P09gazawnpa0KY5LM7JAvKpX9d/U=
+github.com/veandco/go-sdl2 v0.4.40/go.mod h1:OROqMhHD43nT4/i9crJukyVecjPNYYuCofep6SNiAjY=
